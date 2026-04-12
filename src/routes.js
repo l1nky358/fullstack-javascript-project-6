@@ -25,24 +25,24 @@ export default async function routes(app) {
   app.get('/users/new', usersController.newUserForm);
   app.post('/users', usersController.createUser);
   app.get('/users/:id/edit', usersController.editUserForm);
-  app.patch('/users/:id', usersController.updateUser);
-  app.delete('/users/:id', usersController.deleteUser);
+  app.post('/users/:id/update', usersController.updateUser);
+  app.post('/users/:id/delete', usersController.deleteUser);
 
   // Статусы
   app.get('/statuses', statusesController.listStatuses);
   app.get('/statuses/new', statusesController.newStatusForm);
   app.post('/statuses', statusesController.createStatus);
   app.get('/statuses/:id/edit', statusesController.editStatusForm);
-  app.patch('/statuses/:id', statusesController.updateStatus);
-  app.delete('/statuses/:id', statusesController.deleteStatus);
+  app.post('/statuses/:id/update', statusesController.updateStatus);
+  app.post('/statuses/:id/delete', statusesController.deleteStatus);
 
   // Метки
   app.get('/labels', labelsController.listLabels);
   app.get('/labels/new', labelsController.newLabelForm);
   app.post('/labels', labelsController.createLabel);
   app.get('/labels/:id/edit', labelsController.editLabelForm);
-  app.patch('/labels/:id', labelsController.updateLabel);
-  app.delete('/labels/:id', labelsController.deleteLabel);
+  app.post('/labels/:id/update', labelsController.updateLabel);
+  app.post('/labels/:id/delete', labelsController.deleteLabel);
 
   // Задачи
   app.get('/tasks', tasksController.listTasks);
@@ -50,6 +50,6 @@ export default async function routes(app) {
   app.post('/tasks', tasksController.createTask);
   app.get('/tasks/:id', tasksController.showTask);
   app.get('/tasks/:id/edit', tasksController.editTaskForm);
-  app.patch('/tasks/:id', tasksController.updateTask);
-  app.delete('/tasks/:id', tasksController.deleteTask);
+  app.post('/tasks/:id/update', tasksController.updateTask);
+  app.post('/tasks/:id/delete', tasksController.deleteTask);
 }
