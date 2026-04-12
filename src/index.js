@@ -1,3 +1,4 @@
+import User from './models/User.js';
 import fastify from 'fastify';
 import view from '@fastify/view';
 import cookie from '@fastify/cookie';
@@ -15,7 +16,6 @@ import rollbar from './lib/rollbar.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Функция для создания приложения
 export default async function buildApp() {
   const app = fastify({
     logger: true,
@@ -79,6 +79,16 @@ export default async function buildApp() {
     });
   });
 
+  // Middleware для метода DELETE (используем другой подход)
+  app.addHook('preHandler', (request, reply, done) => {
+    if (request.body && request.body._method) {
+      // Не меняем request.method, а сохраняем в отдельное поле
+      request.originalMethod = request.method;
+      request.method = request.body._method.toUpperCase();
+    }
+    done();
+  });
+
   // Настройка i18n
   await i18next
     .use(Backend)
@@ -121,13 +131,6 @@ export default async function buildApp() {
     done();
   });
 
-  app.addHook('preHandler', (request, reply, done) => {
-    if (request.body && request.body._method) {
-      request.method = request.body._method;
-    }
-    done();
-  });
-
   // Настройка шаблонов
   app.register(view, {
     engine: { pug },
@@ -138,6 +141,15 @@ export default async function buildApp() {
       user: null,
       t: t,
     },
+  });
+
+  // Middleware для пользователя
+  app.addHook('preHandler', async (request, reply) => {
+    if (request.session?.userId) {
+      const user = await User.query().findById(request.session.userId);
+      request.user = user;
+      reply.locals.user = user;
+    }
   });
 
   // Аутентификация
