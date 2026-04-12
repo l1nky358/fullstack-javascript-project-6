@@ -1,0 +1,34 @@
+extends ../layout
+
+block content
+  .row.justify-content-center
+    .col-md-6
+      h1.mb-4 Редактирование пользователя
+
+      if flash && flash.error
+        .alert.alert-danger.alert-dismissible.fade-show(role='alert')
+          = flash.error
+          button.btn-close(type='button' data-bs-dismiss='alert')
+
+      form(action=`/users/${user.id}?_method=PATCH` method='POST')
+        input(type='hidden' name='_method' value='PATCH')
+        
+        .mb-3
+          label.form-label(for='data_firstName') Имя
+          input.form-control(type='text' id='data_firstName' name='data[firstName]' value=user.firstName required)
+        
+        .mb-3
+          label.form-label(for='data_lastName') Фамилия
+          input.form-control(type='text' id='data_lastName' name='data[lastName]' value=user.lastName required)
+        
+        .mb-3
+          label.form-label(for='data_email') Email
+          input.form-control(type='email' id='data_email' name='data[email]' value=user.email required)
+        
+        .mb-3
+          label.form-label(for='data_password') Новый пароль (оставьте пустым, если не хотите менять)
+          input.form-control(type='password' id='data_password' name='data[password]')
+        
+        .mb-3
+          button.btn.btn-primary(type='submit') Обновить
+          a.btn.btn-secondary.ms-2(href='/users') Отмена

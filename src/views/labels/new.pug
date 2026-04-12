@@ -1,18 +1,18 @@
 extends ../layout
 
 block content
-  h1.mb-4 Создание статуса
+  h1.mb-4 Создание метки
 
   if flash && flash.error
     .alert.alert-danger.alert-dismissible.fade-show(role='alert')
       = flash.error
       button.btn-close(type='button' data-bs-dismiss='alert')
 
-  form(action='/statuses' method='POST')
+  form(action='/labels' method='POST')
     .mb-3
       label.form-label(for='data_name') Название
-      input.form-control(type='text' id='data_name' name='data[name]' value=(status ? status.name : '') required)
+      input.form-control(type='text' id='data_name' name='data[name]' value=(label ? label.name : '') required)
     
     .mb-3
       button.btn.btn-primary(type='submit') Создать
-      a.btn.btn-secondary.ms-2(href='/statuses') Отмена
+      a.btn.btn-secondary.ms-2(href='/labels') Отмена

@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import view from '@fastify/view';
 import cookie from '@fastify/cookie';
 import session from '@fastify/session';
+import formBody from '@fastify/formbody';
 import pug from 'pug';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
@@ -34,6 +35,9 @@ await i18next
 // Функция перевода
 const t = (key) => i18next.t(key);
 
+// Регистрация плагинов (ВАЖНО: formBody должен быть зарегистрирован до обработки данных)
+app.register(formBody); // ← Добавьте эту строку
+
 // Настройка сессий
 app.register(cookie);
 app.register(session, {
@@ -53,8 +57,8 @@ app.addHook('preHandler', (request, reply, done) => {
   reply.locals = reply.locals || {};
   reply.locals.flash = request.session.flash;
   reply.locals.user = request.user;
-  reply.locals.t = t; // Добавляем функцию перевода
-  request.t = t; // Добавляем для использования в контроллерах
+  reply.locals.t = t;
+  request.t = t;
   // Очищаем flash после использования
   const flash = { ...request.session.flash };
   request.session.flash = {};
@@ -70,7 +74,7 @@ app.register(view, {
   defaultContext: {
     currentYear: new Date().getFullYear(),
     user: null,
-    t: t, // Добавляем функцию перевода в глобальный контекст
+    t: t,
   },
 });
 

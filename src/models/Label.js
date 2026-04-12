@@ -1,8 +1,8 @@
 import { Model } from 'objection';
 
-export default class TaskStatus extends Model {
+export default class Label extends Model {
   static get tableName() {
-    return 'task_statuses';
+    return 'labels';
   }
 
   static get jsonSchema() {
@@ -12,7 +12,6 @@ export default class TaskStatus extends Model {
       properties: {
         id: { type: 'integer' },
         name: { type: 'string', minLength: 1 },
-        color: { type: 'string', default: '#6c757d' },
         createdAt: { type: 'string' },
         updatedAt: { type: 'string' },
       },
@@ -22,11 +21,15 @@ export default class TaskStatus extends Model {
   static get relationMappings() {
     return {
       tasks: {
-        relation: Model.HasManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: () => import('./Task.js').then(m => m.default),
         join: {
-          from: 'task_statuses.id',
-          to: 'tasks.statusId',
+          from: 'labels.id',
+          through: {
+            from: 'task_labels.labelId',
+            to: 'task_labels.taskId',
+          },
+          to: 'tasks.id',
         },
       },
     };

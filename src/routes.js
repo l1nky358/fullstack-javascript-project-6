@@ -1,5 +1,7 @@
 import * as usersController from './controllers/usersController.js';
 import * as statusesController from './controllers/statusesController.js';
+import * as tasksController from './controllers/tasksController.js';
+import * as labelsController from './controllers/labelsController.js';
 
 export default async function routes(app) {
   // Главная
@@ -9,9 +11,13 @@ export default async function routes(app) {
     });
   });
 
-  // Редирект с /login на /session/new
+  // Редиректы
   app.get('/login', async (request, reply) => {
     return reply.redirect('/session/new');
+  });
+
+  app.get('/register', async (request, reply) => {
+    return reply.redirect('/users/new');
   });
 
   // Пользователи
@@ -29,4 +35,21 @@ export default async function routes(app) {
   app.get('/statuses/:id/edit', statusesController.editStatusForm);
   app.patch('/statuses/:id', statusesController.updateStatus);
   app.delete('/statuses/:id', statusesController.deleteStatus);
+
+  // Метки
+  app.get('/labels', labelsController.listLabels);
+  app.get('/labels/new', labelsController.newLabelForm);
+  app.post('/labels', labelsController.createLabel);
+  app.get('/labels/:id/edit', labelsController.editLabelForm);
+  app.patch('/labels/:id', labelsController.updateLabel);
+  app.delete('/labels/:id', labelsController.deleteLabel);
+
+  // Задачи
+  app.get('/tasks', tasksController.listTasks);
+  app.get('/tasks/new', tasksController.newTaskForm);
+  app.post('/tasks', tasksController.createTask);
+  app.get('/tasks/:id', tasksController.showTask);
+  app.get('/tasks/:id/edit', tasksController.editTaskForm);
+  app.patch('/tasks/:id', tasksController.updateTask);
+  app.delete('/tasks/:id', tasksController.deleteTask);
 }

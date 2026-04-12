@@ -18,9 +18,13 @@ html(lang='ru')
             li.nav-item
               a.nav-link(href='/') Главная
             li.nav-item
-              a.nav-link(href='/users') Пользователи
+              a.nav-link(href='/tasks') Задачи
             li.nav-item
               a.nav-link(href='/statuses') Статусы
+            li.nav-item
+              a.nav-link(href='/labels') Метки
+            li.nav-item
+              a.nav-link(href='/users') Пользователи
             if user
               li.nav-item
                 form(action='/session?_method=DELETE' method='POST')

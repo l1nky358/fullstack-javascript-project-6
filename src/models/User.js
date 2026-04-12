@@ -23,8 +23,24 @@ export default class User extends Model {
   }
 
   static get relationMappings() {
-    // Позже добавим связи с задачами
-    return {};
+    return {
+      createdTasks: {
+        relation: Model.HasManyRelation,
+        modelClass: () => import('./Task.js').then(m => m.default),
+        join: {
+          from: 'users.id',
+          to: 'tasks.creatorId',
+        },
+      },
+      executedTasks: {
+        relation: Model.HasManyRelation,
+        modelClass: () => import('./Task.js').then(m => m.default),
+        join: {
+          from: 'users.id',
+          to: 'tasks.executorId',
+        },
+      },
+    };
   }
 
   async $beforeInsert(queryContext) {
@@ -37,7 +53,6 @@ export default class User extends Model {
   async $beforeUpdate(opt, queryContext) {
     await super.$beforeUpdate(opt, queryContext);
     if (this.password && this.password.length < 60) {
-      // Если пароль не захеширован (не начинается с $2a$)
       this.password = await bcrypt.hash(this.password, 10);
     }
     this.updatedAt = new Date().toISOString();

@@ -1,0 +1,48 @@
+extends ../layout
+
+block content
+  .d-flex.justify-content-between.align-items-center.mb-4
+    h1= task.name
+    if user && user.id === task.creatorId
+      div
+        a.btn.btn-primary(href=`/tasks/${task.id}/edit`) Редактировать
+        form.d-inline(action=`/tasks/${task.id}?_method=DELETE` method='POST')
+          input(type='hidden' name='_method' value='DELETE')
+          button.btn.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
+
+  .card
+    .card-body
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Описание
+        p.card-text= task.description || 'Нет описания'
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Статус
+        p= task.status ? task.status.name : '-'
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Автор
+        p= task.creator ? `${task.creator.firstName} ${task.creator.lastName}` : '-'
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Исполнитель
+        p= task.executor ? `${task.executor.firstName} ${task.executor.lastName}` : 'Не назначен'
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Метки
+        if task.labels && task.labels.length > 0
+          .d-flex.gap-2
+            each label in task.labels
+              span.badge.bg-secondary= label.name
+        else
+          p.text-muted Нет меток
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Создана
+        p= new Date(task.createdAt).toLocaleString()
+      
+      .mb-3
+        h6.card-subtitle.mb-2.text-muted Обновлена
+        p= new Date(task.updatedAt).toLocaleString()
+
+  a.btn.btn-secondary.mt-3(href='/tasks') Назад к списку

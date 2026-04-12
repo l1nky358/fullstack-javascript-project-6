@@ -1,0 +1,45 @@
+extends ../layout
+
+block content
+  h1.mb-4 Редактирование задачи
+
+  if flash && flash.error
+    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
+      = flash.error
+      button.btn-close(type='button' data-bs-dismiss='alert')
+
+  form(action=`/tasks/${task.id}?_method=PATCH` method='POST')
+    input(type='hidden' name='_method' value='PATCH')
+    
+    .mb-3
+      label.form-label(for='data_name') Название
+      input.form-control(type='text' id='data_name' name='data[name]' value=task.name required)
+    
+    .mb-3
+      label.form-label(for='data_description') Описание
+      textarea.form-control(id='data_description' name='data[description]' rows='5')= task.description
+    
+    .mb-3
+      label.form-label(for='data_statusId') Статус
+      select.form-control(id='data_statusId' name='data[statusId]' required)
+        option(value='') Выберите статус
+        each status in statuses
+          option(value=status.id selected=(task.statusId === status.id))= status.name
+    
+    .mb-3
+      label.form-label(for='data_executorId') Исполнитель
+      select.form-control(id='data_executorId' name='data[executorId]')
+        option(value='') Не назначен
+        each user in users
+          option(value=user.id selected=(task.executorId === user.id))= `${user.firstName} ${user.lastName}`
+    
+    .mb-3
+      label.form-label(for='data_labels') Метки
+      select.form-control(id='data_labels' name='data[labels][]' multiple size='5')
+        each label in labels
+          option(value=label.id selected=(task.labels && task.labels.some(l => l.id === label.id)))= label.name
+      small.form-text.text-muted Удерживайте Ctrl (или Cmd на Mac) для выбора нескольких меток
+    
+    .mb-3
+      button.btn.btn-primary(type='submit') Обновить
+      a.btn.btn-secondary.ms-2(href='/tasks') Отмена

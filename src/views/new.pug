@@ -1,0 +1,24 @@
+extends ../layout
+
+block content
+  .row.justify-content-center
+    .col-md-6
+      h1.mb-4 Вход
+
+      if flash && flash.error
+        .alert.alert-danger.alert-dismissible.fade-show(role='alert')
+          = flash.error
+          button.btn-close(type='button' data-bs-dismiss='alert')
+
+      form(action='/session' method='POST')
+        .mb-3
+          label.form-label(for='data_email') Email
+          input.form-control(type='email' id='data_email' name='data[email]' required)
+        
+        .mb-3
+          label.form-label(for='data_password') Пароль
+          input.form-control(type='password' id='data_password' name='data[password]' required)
+        
+        .mb-3
+          button.btn.btn-primary(type='submit') Войти
+          a.btn.btn-secondary.ms-2(href='/') Отмена

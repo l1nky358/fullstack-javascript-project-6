@@ -11,6 +11,12 @@ export const listStatuses = async (request, reply) => {
 
 // Форма создания статуса
 export const newStatusForm = async (request, reply) => {
+  // Проверка авторизации
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+  
   return reply.view('statuses/new', {
     status: {},
     title: 'Создание статуса',
@@ -42,6 +48,12 @@ export const createStatus = async (request, reply) => {
 
 // Форма редактирования статуса
 export const editStatusForm = async (request, reply) => {
+  // Проверка авторизации
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+  
   const { id } = request.params;
   const status = await TaskStatus.query().findById(id);
   
@@ -92,11 +104,21 @@ export const deleteStatus = async (request, reply) => {
 
   const { id } = request.params;
   
+  // Проверка, есть ли задачи с этим статусом
+  const statusWithTasks = await TaskStatus.query()
+    .findById(id)
+    .withGraphFetched('tasks');
+  
+  if (statusWithTasks.tasks && statusWithTasks.tasks.length > 0) {
+    reply.flash('error', 'Невозможно удалить статус, так как он используется в задачах');
+    return reply.redirect('/statuses');
+  }
+  
   try {
     await TaskStatus.query().deleteById(id);
     reply.flash('success', 'Статус успешно удален');
   } catch (error) {
-    reply.flash('error', 'Невозможно удалить статус, так как он используется');
+    reply.flash('error', 'Ошибка при удалении статуса');
   }
   
   return reply.redirect('/statuses');
