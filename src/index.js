@@ -1,4 +1,3 @@
-import User from './models/User.js';
 import fastify from 'fastify';
 import view from '@fastify/view';
 import cookie from '@fastify/cookie';
@@ -12,6 +11,7 @@ import configureAuth from './lib/auth.js';
 import routes from './routes.js';
 import knexInstance from './config/database.js';
 import rollbar from './lib/rollbar.js';
+import User from './models/User.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,16 +79,6 @@ export default async function buildApp() {
     });
   });
 
-  // Middleware для метода DELETE (используем другой подход)
-  app.addHook('preHandler', (request, reply, done) => {
-    if (request.body && request.body._method) {
-      // Не меняем request.method, а сохраняем в отдельное поле
-      request.originalMethod = request.method;
-      request.method = request.body._method.toUpperCase();
-    }
-    done();
-  });
-
   // Настройка i18n
   await i18next
     .use(Backend)
@@ -131,6 +121,15 @@ export default async function buildApp() {
     done();
   });
 
+  // Middleware для пользователя
+  app.addHook('preHandler', async (request, reply) => {
+    if (request.session?.userId) {
+      const user = await User.query().findById(request.session.userId);
+      request.user = user;
+      reply.locals.user = user;
+    }
+  });
+
   // Настройка шаблонов
   app.register(view, {
     engine: { pug },
@@ -141,15 +140,6 @@ export default async function buildApp() {
       user: null,
       t: t,
     },
-  });
-
-  // Middleware для пользователя
-  app.addHook('preHandler', async (request, reply) => {
-    if (request.session?.userId) {
-      const user = await User.query().findById(request.session.userId);
-      request.user = user;
-      reply.locals.user = user;
-    }
   });
 
   // Аутентификация
