@@ -31,7 +31,7 @@ export default async function configureAuth(app) {
   });
 
   // Выход
-  app.delete('/session', async (request, reply) => {
+  app.post('/session/delete', async (request, reply) => {
     request.session.destroy();
     reply.flash('success', 'Вы успешно вышли');
     return reply.redirect('/');
