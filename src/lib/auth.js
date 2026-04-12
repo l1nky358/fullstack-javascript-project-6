@@ -2,23 +2,6 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 
 export default async function configureAuth(app) {
-  // Middleware для метода DELETE (для форм)
-  app.addHook('preHandler', (request, reply, done) => {
-    if (request.body && request.body._method) {
-      request.method = request.body._method;
-    }
-    done();
-  });
-
-  // Middleware для пользователя
-  app.addHook('preHandler', async (request, reply) => {
-    if (request.session?.userId) {
-      const user = await User.query().findById(request.session.userId);
-      request.user = user;
-      reply.locals.user = user;
-    }
-  });
-
   // Страница входа
   app.get('/session/new', async (request, reply) => {
     return reply.view('sessions/new', {
@@ -43,19 +26,11 @@ export default async function configureAuth(app) {
     }
     
     request.session.userId = user.id;
-    // ИЗМЕНЕНО: "Вы залогинены" вместо "Добро пожаловать!"
     reply.flash('success', 'Вы залогинены');
     return reply.redirect('/');
   });
 
   // Выход
-  app.post('/session/delete', async (request, reply) => {
-    request.session.destroy();
-    reply.flash('success', 'Вы успешно вышли');
-    return reply.redirect('/');
-  });
-  
-  // Поддержка DELETE через _method
   app.delete('/session', async (request, reply) => {
     request.session.destroy();
     reply.flash('success', 'Вы успешно вышли');
