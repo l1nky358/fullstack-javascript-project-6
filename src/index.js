@@ -21,6 +21,11 @@ export default async function buildApp() {
     logger: true,
   });
 
+  // Добавляем knex в app (для тестов)
+  app.objection = {
+    knex: knexInstance
+  };
+
   // Встроенный парсер для application/x-www-form-urlencoded
   app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, function (req, body, done) {
     try {
@@ -142,7 +147,7 @@ export default async function buildApp() {
   app.register(routes);
 
   // Миграции (только не в production)
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
     await knexInstance.migrate.latest();
   }
 
