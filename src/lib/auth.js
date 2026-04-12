@@ -43,7 +43,8 @@ export default async function configureAuth(app) {
     }
     
     request.session.userId = user.id;
-    reply.flash('success', 'Добро пожаловать!');
+    // ИЗМЕНЕНО: "Вы залогинены" вместо "Добро пожаловать!"
+    reply.flash('success', 'Вы залогинены');
     return reply.redirect('/');
   });
 
