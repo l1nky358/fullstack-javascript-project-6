@@ -27,8 +27,7 @@ html(lang='ru')
               a.nav-link(href='/users') Пользователи
             if user
               li.nav-item
-                form(action='/session?_method=DELETE' method='POST')
-                  input(type='hidden' name='_method' value='DELETE')
+                form(action='/session/delete' method='POST')
                   button.btn.btn-link.nav-link(type='submit') Выход
             else
               li.nav-item
