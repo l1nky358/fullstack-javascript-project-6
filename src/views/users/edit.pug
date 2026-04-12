@@ -10,9 +10,7 @@ block content
           = flash.error
           button.btn-close(type='button' data-bs-dismiss='alert')
 
-      form(action=`/users/${user.id}?_method=PATCH` method='POST')
-        input(type='hidden' name='_method' value='PATCH')
-        
+      form(action=`/users/${user.id}/update` method='POST')
         .mb-3
           label.form-label(for='data_firstName') Имя
           input.form-control(type='text' id='data_firstName' name='data[firstName]' value=user.firstName required)
