@@ -1,0 +1,26 @@
+{
+  "app": {
+    "name": "Task Manager",
+    "description": "Manage your tasks efficiently"
+  },
+  "nav": {
+    "home": "Home",
+    "users": "Users",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out"
+  },
+  "welcome": {
+    "title": "Welcome to Task Manager",
+    "subtitle": "Organize your tasks, boost your productivity",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More"
+  },
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit"
+  }
+}

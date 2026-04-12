@@ -1,0 +1,103 @@
+import TaskStatus from '../models/TaskStatus.js';
+
+// Список всех статусов
+export const listStatuses = async (request, reply) => {
+  const statuses = await TaskStatus.query().orderBy('id');
+  return reply.view('statuses/index', {
+    statuses,
+    title: 'Статусы задач',
+  });
+};
+
+// Форма создания статуса
+export const newStatusForm = async (request, reply) => {
+  return reply.view('statuses/new', {
+    status: {},
+    title: 'Создание статуса',
+  });
+};
+
+// Создание статуса
+export const createStatus = async (request, reply) => {
+  // Проверка авторизации
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+
+  try {
+    const statusData = request.body.data;
+    await TaskStatus.query().insert(statusData);
+    reply.flash('success', 'Статус успешно создан');
+    return reply.redirect('/statuses');
+  } catch (error) {
+    reply.flash('error', 'Ошибка при создании статуса');
+    return reply.view('statuses/new', {
+      status: request.body.data,
+      errors: error.data,
+      title: 'Создание статуса',
+    });
+  }
+};
+
+// Форма редактирования статуса
+export const editStatusForm = async (request, reply) => {
+  const { id } = request.params;
+  const status = await TaskStatus.query().findById(id);
+  
+  if (!status) {
+    reply.flash('error', 'Статус не найден');
+    return reply.redirect('/statuses');
+  }
+  
+  return reply.view('statuses/edit', {
+    status,
+    title: 'Редактирование статуса',
+  });
+};
+
+// Обновление статуса
+export const updateStatus = async (request, reply) => {
+  // Проверка авторизации
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+
+  const { id } = request.params;
+  
+  try {
+    const statusData = request.body.data;
+    await TaskStatus.query().patchAndFetchById(id, statusData);
+    reply.flash('success', 'Статус успешно обновлен');
+    return reply.redirect('/statuses');
+  } catch (error) {
+    const status = await TaskStatus.query().findById(id);
+    reply.flash('error', 'Ошибка при обновлении статуса');
+    return reply.view('statuses/edit', {
+      status: { ...status, ...request.body.data },
+      errors: error.data,
+      title: 'Редактирование статуса',
+    });
+  }
+};
+
+// Удаление статуса
+export const deleteStatus = async (request, reply) => {
+  // Проверка авторизации
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+
+  const { id } = request.params;
+  
+  try {
+    await TaskStatus.query().deleteById(id);
+    reply.flash('success', 'Статус успешно удален');
+  } catch (error) {
+    reply.flash('error', 'Невозможно удалить статус, так как он используется');
+  }
+  
+  return reply.redirect('/statuses');
+};

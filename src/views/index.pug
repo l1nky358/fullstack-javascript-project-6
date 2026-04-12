@@ -1,0 +1,31 @@
+extends layout
+
+block content
+  .row.justify-content-center
+    .col-md-8.text-center
+      h1.display-4.mb-4 #{t('welcome.title')}
+      p.lead #{t('welcome.subtitle')}
+      
+      .mt-5
+        a.btn.btn-primary.btn-lg.me-3(href='/register') #{t('welcome.getStarted')}
+        a.btn.btn-outline-secondary.btn-lg(href='/users') #{t('welcome.learnMore')}
+  
+  .row.mt-5.pt-5
+    .col-md-4.mb-4
+      .card.h-100.shadow-sm
+        .card-body.text-center
+          h3.card-title 📋
+          h4 Organize Tasks
+          p.card-text Create, edit, and delete tasks with ease
+    .col-md-4.mb-4
+      .card.h-100.shadow-sm
+        .card-body.text-center
+          h3.card-title 👥
+          h4 Team Collaboration
+          p.card-text Share tasks and work together efficiently
+    .col-md-4.mb-4
+      .card.h-100.shadow-sm
+        .card-body.text-center
+          h3.card-title 📊
+          h4 Track Progress
+          p.card-text Monitor your productivity and achievements

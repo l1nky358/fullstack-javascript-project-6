@@ -1,0 +1,31 @@
+$primary: #0d6efd;
+$dark: #212529;
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+.card {
+  transition: transform 0.2s;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+}
+
+.navbar-brand {
+  font-weight: bold;
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .display-4 {
+    font-size: 2rem;
+  }
+}

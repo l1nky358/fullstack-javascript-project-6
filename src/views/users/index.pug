@@ -1,0 +1,28 @@
+extends ../layout
+
+block content
+  h1.mb-4 #{t('users.title')}
+  
+  table.table.table-striped
+    thead
+      tr
+        th ID
+        th #{t('users.firstName')}
+        th #{t('users.lastName')}
+        th #{t('users.email')}
+        if user
+          th #{t('users.actions')}
+    tbody
+      each userItem in users
+        tr
+          td= userItem.id
+          td= userItem.firstName
+          td= userItem.lastName
+          td= userItem.email
+          if user && user.id === userItem.id
+            td
+              a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) #{t('buttons.edit')}
+              button.btn.btn-sm.btn-danger.ms-2(onclick=`deleteUser(${userItem.id})`) #{t('buttons.delete')}
+  
+  if !user
+    .alert.alert-info #{t('users.loginToEdit')}
