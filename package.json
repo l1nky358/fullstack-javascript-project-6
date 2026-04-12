@@ -6,30 +6,41 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step required'",
+    "test": "NODE_ENV=test node --test --experimental-test-coverage",
+    "test-coverage": "NODE_ENV=test node --test --experimental-test-coverage --test-reporter=lcov",
+    "lint": "eslint .",
+    "migrate": "knex migrate:latest --knexfile knexfile.js"
   },
+  "keywords": [
+    "hexlet",
+    "task-manager",
+    "fastify"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
   "dependencies": {
+    "fastify": "^4.28.1",
     "@fastify/cookie": "^8.3.0",
-    "@fastify/formbody": "^7.4.0",
-    "@fastify/passport": "^2.5.0",
-    "@fastify/session": "^10.9.0",
-    "@fastify/static": "^6.12.0",
+    "@fastify/session": "^10.4.0",
     "@fastify/view": "^8.2.0",
+    "@fastify/static": "^6.12.0",
+    "pug": "^3.0.2",
+    "i18next": "^23.10.0",
+    "i18next-fs-backend": "^2.3.1",
+    "objection": "^3.1.4",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7",
+    "pg": "^8.11.5",
     "bcryptjs": "^2.4.3",
-    "dotenv": "^16.6.1",
-    "fastify": "^4.29.1",
-    "i18next": "^23.16.8",
-    "i18next-fs-backend": "^2.6.3",
-    "knex": "^3.2.9",
-    "objection": "^3.1.5",
-    "passport-local": "^1.0.0",
-    "pg": "^8.20.0",
-    "pug": "^3.0.4",
-    "rollbar": "^3.1.0",
-    "sqlite3": "^5.1.7"
+    "dotenv": "^16.4.5",
+    "rollbar": "^2.26.2",
+    "@rollbar/node": "^2.26.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.0",
+    "eslint": "^8.57.0"
   },
   "engines": {
     "node": ">=18.x"
