@@ -2,7 +2,6 @@ import fastify from 'fastify';
 import view from '@fastify/view';
 import cookie from '@fastify/cookie';
 import session from '@fastify/session';
-import formBody from '@fastify/formbody';
 import pug from 'pug';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
@@ -11,12 +10,81 @@ import { fileURLToPath } from 'url';
 import configureAuth from './lib/auth.js';
 import routes from './routes.js';
 import knexInstance from './config/database.js';
+import rollbar from './lib/rollbar.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = fastify({
   logger: true,
+});
+
+// Встроенный парсер для application/x-www-form-urlencoded
+app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, function (req, body, done) {
+  try {
+    const params = new URLSearchParams(body);
+    const parsed = {};
+    for (const [key, value] of params) {
+      if (key.includes('[')) {
+        const match = key.match(/^(\w+)\[(\w+)\]$/);
+        if (match) {
+          const [, obj, field] = match;
+          if (!parsed[obj]) parsed[obj] = {};
+          parsed[obj][field] = value;
+        }
+      } else {
+        parsed[key] = value;
+      }
+    }
+    done(null, parsed);
+  } catch (err) {
+    rollbar.error('Error parsing form body', err);
+    done(err);
+  }
+});
+
+// Глобальный обработчик ошибок с Rollbar
+app.setErrorHandler((error, request, reply) => {
+  // Логируем ошибку в Rollbar
+  rollbar.error(error, {
+    request: {
+      method: request.method,
+      url: request.url,
+      body: request.body,
+      params: request.params,
+      query: request.query,
+      headers: request.headers,
+    },
+    user: request.user ? {
+      id: request.user.id,
+      email: request.user.email,
+    } : null,
+  });
+
+  // Логируем в консоль для разработки
+  app.log.error(error);
+
+  // Отправляем ответ пользователю
+  const statusCode = error.statusCode || 500;
+  reply.status(statusCode).send({
+    statusCode,
+    error: error.message || 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Произошла ошибка на сервере. Администратор уже уведомлен.'
+      : error.message,
+  });
+});
+
+// Graceful shutdown
+process.on('uncaughtException', (error) => {
+  rollbar.critical('Uncaught Exception', error);
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  rollbar.critical('Unhandled Rejection', { reason, promise });
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 // Настройка i18n
@@ -32,11 +100,7 @@ await i18next
     },
   });
 
-// Функция перевода
 const t = (key) => i18next.t(key);
-
-// Регистрация плагинов (ВАЖНО: formBody должен быть зарегистрирован до обработки данных)
-app.register(formBody); // ← Добавьте эту строку
 
 // Настройка сессий
 app.register(cookie);
@@ -59,10 +123,16 @@ app.addHook('preHandler', (request, reply, done) => {
   reply.locals.user = request.user;
   reply.locals.t = t;
   request.t = t;
-  // Очищаем flash после использования
   const flash = { ...request.session.flash };
   request.session.flash = {};
   reply.locals.flash = flash;
+  done();
+});
+
+app.addHook('preHandler', (request, reply, done) => {
+  if (request.body && request.body._method) {
+    request.method = request.body._method;
+  }
   done();
 });
 

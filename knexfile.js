@@ -1,5 +1,8 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,9 +19,6 @@ if (isTest) {
     useNullAsDefault: true,
     migrations: {
       directory: path.join(__dirname, 'src', 'migrations'),
-    },
-    seeds: {
-      directory: path.join(__dirname, 'src', 'seeds'),
     },
   };
 } else if (isProduction) {

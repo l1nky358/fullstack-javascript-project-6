@@ -25,6 +25,7 @@
     "passport-local": "^1.0.0",
     "pg": "^8.20.0",
     "pug": "^3.0.4",
+    "rollbar": "^3.1.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
