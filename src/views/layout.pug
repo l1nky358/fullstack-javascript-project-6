@@ -1,5 +1,5 @@
 doctype html
-html(lang='ru')
+html(lang='en')
   head
     meta(charset='UTF-8')
     meta(name='viewport' content='width=device-width, initial-scale=1.0')
@@ -16,24 +16,24 @@ html(lang='ru')
         .collapse.navbar-collapse(id='navbarNav')
           ul.navbar-nav.ms-auto
             li.nav-item
-              a.nav-link(href='/') Главная
+              a.nav-link(href='/') Home
             li.nav-item
-              a.nav-link(href='/tasks') Задачи
+              a.nav-link(href='/tasks') Tasks
             li.nav-item
-              a.nav-link(href='/statuses') Статусы
+              a.nav-link(href='/statuses') Statuses
             li.nav-item
-              a.nav-link(href='/labels') Метки
+              a.nav-link(href='/labels') Labels
             li.nav-item
-              a.nav-link(href='/users') Пользователи
+              a.nav-link(href='/users') Users
             if user
               li.nav-item
                 form(action='/session/delete' method='POST')
-                  button.btn.btn-link.nav-link(type='submit') Выход
+                  button.btn.btn-link.nav-link(type='submit') Sign Out
             else
               li.nav-item
-                a.nav-link(href='/session/new') Вход
+                a.nav-link(href='/session/new') Sign In
               li.nav-item
-                a.nav-link(href='/users/new') Регистрация
+                a.nav-link(href='/users/new') Sign Up
 
     main.container.mt-4
       if flash && flash.success
