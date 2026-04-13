@@ -99,10 +99,10 @@ export default async function buildApp() {
   app.register(session, {
     secret: process.env.SESSION_SECRET || 'my-super-secret-key-that-is-at-least-32-chars-long',
     cookie: { secure: false, httpOnly: true },
-    saveUninitialized: true,
+    saveUninitialized: false,
   });
 
-  // Flash middleware - ИСПРАВЛЕННАЯ ВЕРСИЯ
+  // Flash middleware
   app.addHook('preHandler', (request, reply, done) => {
     // Инициализируем session.flash если его нет
     if (!request.session) {
@@ -114,26 +114,16 @@ export default async function buildApp() {
     
     // Создаем метод flash для ответа
     reply.flash = (type, message) => {
-      if (request.session) {
-        request.session.flash[type] = message;
-      }
+      request.session.flash[type] = message;
     };
     
     // Передаем flash в locals
     reply.locals = reply.locals || {};
-    reply.locals.flash = request.session.flash || {};
+    reply.locals.flash = request.session.flash;
     reply.locals.user = request.user;
     reply.locals.t = t;
     request.t = t;
     
-    done();
-  });
-
-  // Очищаем flash после рендера (используем onSend)
-  app.addHook('onSend', (request, reply, payload, done) => {
-    if (request.session) {
-      request.session.flash = {};
-    }
     done();
   });
 
@@ -144,6 +134,14 @@ export default async function buildApp() {
       request.user = user;
       reply.locals.user = user;
     }
+  });
+
+  // Очищаем flash после ответа
+  app.addHook('onResponse', (request, reply, done) => {
+    if (request.session) {
+      request.session.flash = {};
+    }
+    done();
   });
 
   // Настройка шаблонов
