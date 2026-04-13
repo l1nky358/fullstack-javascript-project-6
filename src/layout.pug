@@ -36,16 +36,7 @@ html(lang='ru')
                 a.nav-link(href='/users/new') Регистрация
 
     main.container.mt-4
-      if flash && flash.success
-        .alert.alert-success.alert-dismissible.fade-show(role='alert')
-          = flash.success
-          button.btn-close(type='button' data-bs-dismiss='alert')
-      
-      if flash && flash.error
-        .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-          = flash.error
-          button.btn-close(type='button' data-bs-dismiss='alert')
-      
+      // УДАЛИТЕ ЭТОТ БЛОК - flash сообщения будут в дочерних шаблонах
       block content
 
     footer.bg-light.text-center.text-muted.py-3.mt-5
