@@ -9,11 +9,11 @@ export default async function configureAuth(app) {
     });
   });
 
-  // Вход с валидацией через flash
+  // Вход
   app.post('/session', async (request, reply) => {
     const { email, password } = request.body.data;
     
-    // Валидация - проверяем что поля не пустые
+    // Валидация
     if (!email || email.trim() === '') {
       reply.flash('error', 'Email не может быть пустым');
       return reply.redirect('/session/new');
