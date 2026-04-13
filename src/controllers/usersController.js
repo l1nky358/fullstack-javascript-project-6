@@ -232,7 +232,9 @@ export const deleteUser = async (request, reply) => {
       request.session.destroy();
     }
     
-    // Явный редирект на /users
+    // Flash сообщение
+    reply.flash('success', 'Пользователь успешно удалён');
+    
     return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User deletion failed', error, {
