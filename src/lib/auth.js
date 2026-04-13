@@ -13,7 +13,7 @@ export default async function configureAuth(app) {
   app.post('/session', async (request, reply) => {
     const { email, password } = request.body.data;
     
-    // Валидация
+    // Проверка на пустые поля
     if (!email || email.trim() === '') {
       reply.flash('error', 'Поле email не должно быть пустым');
       return reply.redirect('/session/new');
@@ -26,13 +26,13 @@ export default async function configureAuth(app) {
     
     const user = await User.query().findOne({ email });
     if (!user) {
-      reply.flash('error', 'Неверный email или пароль');
+      reply.flash('error', 'Неправильный email или пароль');
       return reply.redirect('/session/new');
     }
     
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      reply.flash('error', 'Неверный email или пароль');
+      reply.flash('error', 'Неправильный email или пароль');
       return reply.redirect('/session/new');
     }
     
