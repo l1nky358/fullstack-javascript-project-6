@@ -30,7 +30,7 @@ export default async function configureAuth(app) {
     return reply.redirect('/');
   });
 
-  // Выход
+  // Выход - ВАЖНО: редирект на '/'
   app.post('/session/delete', async (request, reply) => {
     request.session.destroy();
     reply.flash('success', 'Вы успешно вышли');
