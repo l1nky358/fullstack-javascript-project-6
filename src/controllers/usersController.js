@@ -246,7 +246,7 @@ export const deleteUser = async (request, reply) => {
     });
     
     request.session.destroy();
-    reply.flash('success', 'Пользователь успешно удален');
+    reply.flash('success', 'Пользователь успешно удалён');
     return reply.redirect('/');
   } catch (error) {
     rollbar.error('User deletion failed', error, {
