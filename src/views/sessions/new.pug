@@ -12,24 +12,25 @@ block content
             type='email'
             id='data_email'
             name='data[email]'
-            class={ 'is-invalid': flash && flash.field === 'email' }
+            value=(formData ? formData.email : '')
+            class={ 'is-invalid': errors && errors.email }
           )
-          if flash && flash.field === 'email'
+          if errors && errors.email
             .invalid-feedback
-              = flash.error
-
+              = errors.email
+        
         .mb-3
           label.form-label(for='data_password') Пароль
           input.form-control(
             type='password'
             id='data_password'
             name='data[password]'
-            class={ 'is-invalid': flash && flash.field === 'password' }
+            class={ 'is-invalid': errors && errors.password }
           )
-          if flash && flash.field === 'password'
+          if errors && errors.password
             .invalid-feedback
-              = flash.error
-
+              = errors.password
+        
         .mb-3
           button.btn.btn-primary(type='submit') Войти
           a.btn.btn-secondary.ms-2(href='/') Отмена
