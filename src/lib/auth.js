@@ -30,9 +30,15 @@ export default async function configureAuth(app) {
     return reply.redirect('/');
   });
 
-  // Выход - без flash чтобы избежать ошибки
+  // Выход - с flash сообщением
   app.post('/session/delete', async (request, reply) => {
+    // Устанавливаем flash ДО уничтожения сессии
+    reply.flash('success', 'Вы разлогинены');
+    
+    // Уничтожаем сессию
     request.session.destroy();
+    
+    // Редирект на главную
     return reply.redirect('/');
   });
 }
