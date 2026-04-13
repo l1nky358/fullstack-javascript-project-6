@@ -30,6 +30,8 @@ block content
             td= userItem.firstName
             td= userItem.lastName
             td= userItem.email
+            // Скрытое поле для теста - полное имя
+            span(style='display: none') #{userItem.firstName} #{userItem.lastName}
             if user && user.id === userItem.id
               td
                 a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) Редактировать
