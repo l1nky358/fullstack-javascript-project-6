@@ -16,12 +16,10 @@ export default async function configureAuth(app) {
     const { email, password } = request.body.data;
     const errors = {};
     
-    // Валидация
+    // Валидация - показываем только одну ошибку
     if (!email || email.trim() === '') {
       errors.email = 'Email не должен быть пустым';
-    }
-    
-    if (!password || password.trim() === '') {
+    } else if (!password || password.trim() === '') {
       errors.password = 'Пароль не должен быть пустым';
     }
     
@@ -55,7 +53,6 @@ export default async function configureAuth(app) {
     }
     
     request.session.userId = user.id;
-    // Добавляем flash сообщение для теста
     reply.flash('success', 'Вы залогинены');
     return reply.redirect('/');
   });
