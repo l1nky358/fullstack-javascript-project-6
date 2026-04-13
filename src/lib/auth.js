@@ -6,6 +6,7 @@ export default async function configureAuth(app) {
   app.get('/session/new', async (request, reply) => {
     return reply.view('sessions/new', {
       title: 'Вход',
+      errors: null,
     });
   });
 
@@ -13,31 +14,39 @@ export default async function configureAuth(app) {
   app.post('/session', async (request, reply) => {
     const { email, password } = request.body.data;
     
-    // Валидация: проверяем что поля не пустые
+    // Валидация
     const errors = [];
     if (!email || email.trim() === '') {
-      errors.push('Email не может быть пустым');
+      errors.push({ field: 'email', message: 'Email не может быть пустым' });
     }
     if (!password || password.trim() === '') {
-      errors.push('Пароль не может быть пустым');
+      errors.push({ field: 'password', message: 'Пароль не может быть пустым' });
     }
     
     if (errors.length > 0) {
-      // Показываем первую ошибку
-      reply.flash('error', errors[0]);
-      return reply.redirect('/session/new');
+      return reply.view('sessions/new', {
+        title: 'Вход',
+        errors: errors,
+        formData: { email, password },
+      });
     }
     
     const user = await User.query().findOne({ email });
     if (!user) {
-      reply.flash('error', 'Неверный email или пароль');
-      return reply.redirect('/session/new');
+      return reply.view('sessions/new', {
+        title: 'Вход',
+        errors: [{ field: 'email', message: 'Неверный email или пароль' }],
+        formData: { email, password: '' },
+      });
     }
     
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      reply.flash('error', 'Неверный email или пароль');
-      return reply.redirect('/session/new');
+      return reply.view('sessions/new', {
+        title: 'Вход',
+        errors: [{ field: 'password', message: 'Неверный email или пароль' }],
+        formData: { email, password: '' },
+      });
     }
     
     request.session.userId = user.id;
