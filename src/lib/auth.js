@@ -6,47 +6,34 @@ export default async function configureAuth(app) {
   app.get('/session/new', async (request, reply) => {
     return reply.view('sessions/new', {
       title: 'Вход',
-      errors: null,
     });
   });
 
-  // Вход с валидацией
+  // Вход с валидацией через flash
   app.post('/session', async (request, reply) => {
     const { email, password } = request.body.data;
     
-    // Валидация
-    const errors = [];
+    // Валидация - проверяем что поля не пустые
     if (!email || email.trim() === '') {
-      errors.push({ field: 'email', message: 'Email не может быть пустым' });
-    }
-    if (!password || password.trim() === '') {
-      errors.push({ field: 'password', message: 'Пароль не может быть пустым' });
+      reply.flash('error', 'Email не может быть пустым');
+      return reply.redirect('/session/new');
     }
     
-    if (errors.length > 0) {
-      return reply.view('sessions/new', {
-        title: 'Вход',
-        errors: errors,
-        formData: { email, password },
-      });
+    if (!password || password.trim() === '') {
+      reply.flash('error', 'Пароль не может быть пустым');
+      return reply.redirect('/session/new');
     }
     
     const user = await User.query().findOne({ email });
     if (!user) {
-      return reply.view('sessions/new', {
-        title: 'Вход',
-        errors: [{ field: 'email', message: 'Неверный email или пароль' }],
-        formData: { email, password: '' },
-      });
+      reply.flash('error', 'Неверный email или пароль');
+      return reply.redirect('/session/new');
     }
     
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return reply.view('sessions/new', {
-        title: 'Вход',
-        errors: [{ field: 'password', message: 'Неверный email или пароль' }],
-        formData: { email, password: '' },
-      });
+      reply.flash('error', 'Неверный email или пароль');
+      return reply.redirect('/session/new');
     }
     
     request.session.userId = user.id;
