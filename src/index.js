@@ -104,9 +104,9 @@ export default async function buildApp() {
 
   // Flash middleware
   app.addHook('preHandler', (request, reply, done) => {
-    // Инициализируем session.flash если его нет
+    // Если сессии нет, создаем временную для flash
     if (!request.session) {
-      request.session = {};
+      request.session = { flash: {} };
     }
     if (!request.session.flash) {
       request.session.flash = {};
