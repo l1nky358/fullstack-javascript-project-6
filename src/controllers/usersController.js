@@ -180,7 +180,7 @@ export const updateUser = async (request, reply) => {
       updatedFields: Object.keys(userData),
     });
     
-    reply.flash('success', 'Пользователь успешно обновлен');
+    reply.flash('success', 'Пользователь успешно изменён');
     return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User update failed', error, {
