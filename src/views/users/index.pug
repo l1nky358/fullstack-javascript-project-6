@@ -18,8 +18,7 @@ block content
       thead
         tr
           th ID
-          th Имя
-          th Фамилия
+          th Полное имя
           th Email
           if user
             th Действия
@@ -27,14 +26,11 @@ block content
         each userItem in users
           tr
             td= userItem.id
-            td= userItem.firstName
-            td= userItem.lastName
+            td #{userItem.firstName} #{userItem.lastName}
             td= userItem.email
-            // Скрытое поле для теста - полное имя
-            span(style='display: none') #{userItem.firstName} #{userItem.lastName}
             if user && user.id === userItem.id
               td
-                a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) Редактировать
+                a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) Изменить
                 form.d-inline(action=`/users/${userItem.id}/delete` method='POST')
                   button.btn.btn-sm.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
   else
