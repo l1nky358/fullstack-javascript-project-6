@@ -99,25 +99,41 @@ export default async function buildApp() {
   app.register(session, {
     secret: process.env.SESSION_SECRET || 'my-super-secret-key-that-is-at-least-32-chars-long',
     cookie: { secure: false, httpOnly: true },
-    saveUninitialized: false,
+    saveUninitialized: true,
   });
 
-  // Flash middleware
+  // Flash middleware - ИСПРАВЛЕННАЯ ВЕРСИЯ
   app.addHook('preHandler', (request, reply, done) => {
+    // Инициализируем session.flash если его нет
+    if (!request.session) {
+      request.session = {};
+    }
     if (!request.session.flash) {
       request.session.flash = {};
     }
+    
+    // Создаем метод flash для ответа
     reply.flash = (type, message) => {
-      request.session.flash[type] = message;
+      if (request.session) {
+        request.session.flash[type] = message;
+      }
     };
+    
+    // Передаем flash в locals
     reply.locals = reply.locals || {};
-    reply.locals.flash = request.session.flash;
+    reply.locals.flash = request.session.flash || {};
     reply.locals.user = request.user;
     reply.locals.t = t;
     request.t = t;
-    const flash = { ...request.session.flash };
-    request.session.flash = {};
-    reply.locals.flash = flash;
+    
+    done();
+  });
+
+  // Очищаем flash после рендера (используем onSend)
+  app.addHook('onSend', (request, reply, payload, done) => {
+    if (request.session) {
+      request.session.flash = {};
+    }
     done();
   });
 
