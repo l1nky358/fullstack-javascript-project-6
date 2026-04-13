@@ -9,9 +9,24 @@ export default async function configureAuth(app) {
     });
   });
 
-  // Вход
+  // Вход с валидацией
   app.post('/session', async (request, reply) => {
     const { email, password } = request.body.data;
+    
+    // Валидация: проверяем что поля не пустые
+    const errors = [];
+    if (!email || email.trim() === '') {
+      errors.push('Email не может быть пустым');
+    }
+    if (!password || password.trim() === '') {
+      errors.push('Пароль не может быть пустым');
+    }
+    
+    if (errors.length > 0) {
+      // Показываем первую ошибку
+      reply.flash('error', errors[0]);
+      return reply.redirect('/session/new');
+    }
     
     const user = await User.query().findOne({ email });
     if (!user) {
@@ -30,13 +45,10 @@ export default async function configureAuth(app) {
     return reply.redirect('/');
   });
 
-  // Выход - без query параметра
+  // Выход
   app.post('/session/delete', async (request, reply) => {
-    // Очищаем userId из сессии
     request.session.userId = null;
-    // Устанавливаем flash сообщение
     reply.flash('success', 'Вы разлогинены');
-    // Редирект на главную без параметров
     return reply.redirect('/');
   });
 }
