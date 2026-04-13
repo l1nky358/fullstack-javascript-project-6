@@ -8,18 +8,28 @@ block content
       form(action='/session' method='POST' novalidate)
         .mb-3
           label.form-label(for='data_email') Email
-          input.form-control(type='email' id='data_email' name='data[email]' value=(formData ? formData.email : ''))
-          if flash && flash.error && flash.field === 'email'
-            .text-danger.mt-1(style='font-size: 0.875rem')
+          input.form-control(
+            type='email'
+            id='data_email'
+            name='data[email]'
+            class={ 'is-invalid': flash && flash.field === 'email' }
+          )
+          if flash && flash.field === 'email'
+            .invalid-feedback
               = flash.error
-        
+
         .mb-3
           label.form-label(for='data_password') Пароль
-          input.form-control(type='password' id='data_password' name='data[password]')
-          if flash && flash.error && flash.field === 'password'
-            .text-danger.mt-1(style='font-size: 0.875rem')
+          input.form-control(
+            type='password'
+            id='data_password'
+            name='data[password]'
+            class={ 'is-invalid': flash && flash.field === 'password' }
+          )
+          if flash && flash.field === 'password'
+            .invalid-feedback
               = flash.error
-        
+
         .mb-3
           button.btn.btn-primary(type='submit') Войти
           a.btn.btn-secondary.ms-2(href='/') Отмена
