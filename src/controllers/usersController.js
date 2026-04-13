@@ -219,6 +219,9 @@ export const deleteUser = async (request, reply) => {
       return reply.redirect('/users');
     }
     
+    // Устанавливаем flash сообщение ДО удаления сессии
+    reply.flash('success', 'Пользователь успешно удалён');
+    
     // Удаляем пользователя
     await User.query().deleteById(id);
     
@@ -232,8 +235,7 @@ export const deleteUser = async (request, reply) => {
       request.session.destroy();
     }
     
-    // Редирект с параметром для показа уведомления
-    return reply.redirect('/users?deleted=success');
+    return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User deletion failed', error, {
       userId: request.params.id,
