@@ -55,12 +55,15 @@ export default async function configureAuth(app) {
     }
     
     request.session.userId = user.id;
+    // Добавляем flash сообщение для теста
+    reply.flash('success', 'Вы залогинены');
     return reply.redirect('/');
   });
 
   // Выход
   app.post('/session/delete', async (request, reply) => {
     request.session.userId = null;
+    reply.flash('success', 'Вы разлогинены');
     return reply.redirect('/');
   });
 }
