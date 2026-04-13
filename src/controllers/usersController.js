@@ -231,7 +231,7 @@ export const deleteUser = async (request, reply) => {
         userId: id,
         tasksCount: userWithTasks.createdTasks.length,
       });
-      reply.flash('error', `Невозможно удалить пользователя, так как он является автором ${userWithTasks.createdTasks.length} задач`);
+      reply.flash('error', 'Невозможно удалить пользователя');
       return reply.redirect('/users');
     }
     
@@ -240,7 +240,7 @@ export const deleteUser = async (request, reply) => {
         userId: id,
         tasksCount: userWithTasks.executedTasks.length,
       });
-      reply.flash('error', `Невозможно удалить пользователя, так как он является исполнителем ${userWithTasks.executedTasks.length} задач`);
+      reply.flash('error', 'Невозможно удалить пользователя');
       return reply.redirect('/users');
     }
     
