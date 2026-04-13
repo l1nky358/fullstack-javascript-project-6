@@ -232,7 +232,7 @@ export const deleteUser = async (request, reply) => {
       request.session.destroy();
     }
     
-    // Flash сообщение
+    // Alert сообщение
     reply.flash('success', 'Пользователь успешно удалён');
     
     return reply.redirect('/users');
