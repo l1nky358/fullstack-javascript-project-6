@@ -5,17 +5,20 @@ block content
     .col-md-6
       h1.mb-4 Вход
 
-      form(action='/session' method='POST')
+      form(action='/session' method='POST' novalidate)
         .mb-3
           label.form-label(for='data_email') Email
-          input.form-control(type='email' id='data_email' name='data[email]' required)
-          if flash && flash.error
+          input.form-control(type='email' id='data_email' name='data[email]' value=(formData ? formData.email : ''))
+          if flash && flash.error && flash.field === 'email'
             .text-danger.mt-1(style='font-size: 0.875rem')
               = flash.error
         
         .mb-3
           label.form-label(for='data_password') Пароль
-          input.form-control(type='password' id='data_password' name='data[password]' required)
+          input.form-control(type='password' id='data_password' name='data[password]')
+          if flash && flash.error && flash.field === 'password'
+            .text-danger.mt-1(style='font-size: 0.875rem')
+              = flash.error
         
         .mb-3
           button.btn.btn-primary(type='submit') Войти
