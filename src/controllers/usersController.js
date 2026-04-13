@@ -23,8 +23,9 @@ export const listUsers = async (request, reply) => {
 export const newUserForm = async (request, reply) => {
   try {
     return reply.view('users/new', {
-      user: {},
       title: 'Регистрация',
+      errors: null,
+      formData: {},
     });
   } catch (error) {
     rollbar.error('Error loading registration form', error);
@@ -35,47 +36,61 @@ export const newUserForm = async (request, reply) => {
 
 // Создание пользователя (регистрация)
 export const createUser = async (request, reply) => {
-  try {
-    const userData = request.body.data;
-    
-    // Проверка, существует ли пользователь с таким email
+  const userData = request.body.data || {};
+  const errors = {};
+  
+  // Валидация
+  if (!userData.firstName || userData.firstName.trim() === '') {
+    errors.firstName = 'Имя не должно быть пустым';
+  }
+  
+  if (!userData.lastName || userData.lastName.trim() === '') {
+    errors.lastName = 'Фамилия не должна быть пустой';
+  }
+  
+  if (!userData.email || userData.email.trim() === '') {
+    errors.email = 'Email не должен быть пустым';
+  }
+  
+  if (!userData.password || userData.password.trim() === '') {
+    errors.password = 'Пароль не должен быть пустым';
+  } else if (userData.password.length < 3) {
+    errors.password = 'Пароль должен содержать минимум 3 символа';
+  }
+  
+  // Проверка уникальности email
+  if (userData.email && !errors.email) {
     const existingUser = await User.query().findOne({ email: userData.email });
     if (existingUser) {
-      rollbar.info('Registration attempt with existing email', {
-        email: userData.email,
-        ip: request.ip,
-      });
-      reply.flash('error', 'Пользователь с таким email уже существует');
-      return reply.view('users/new', {
-        user: userData,
-        title: 'Регистрация',
-      });
+      errors.email = 'Пользователь с таким email уже существует';
     }
-    
+  }
+  
+  // Если есть ошибки - показываем форму с ошибками
+  if (Object.keys(errors).length > 0) {
+    return reply.view('users/new', {
+      title: 'Регистрация',
+      errors: errors,
+      formData: userData,
+    });
+  }
+  
+  try {
     await User.query().insert(userData);
-    
-    rollbar.info('New user registered', {
-      userId: userData.id,
+    reply.flash('success', 'Пользователь успешно зарегистрирован');
+    return reply.redirect('/');
+  } catch (error) {
+    rollbar.error('User registration failed', error, {
       email: userData.email,
       firstName: userData.firstName,
       lastName: userData.lastName,
     });
     
-    reply.flash('success', 'Пользователь успешно зарегистрирован');
-    return reply.redirect('/users');
-  } catch (error) {
-    rollbar.error('User registration failed', error, {
-      email: request.body.data?.email,
-      firstName: request.body.data?.firstName,
-      lastName: request.body.data?.lastName,
-      timestamp: new Date().toISOString(),
-    });
-    
-    reply.flash('error', 'Ошибка при регистрации: ' + (error.message || 'Неизвестная ошибка'));
+    errors.general = 'Ошибка при регистрации';
     return reply.view('users/new', {
-      user: request.body.data || {},
-      errors: error.data,
       title: 'Регистрация',
+      errors: errors,
+      formData: userData,
     });
   }
 };
