@@ -102,7 +102,7 @@ export default async function buildApp() {
     saveUninitialized: false,
   });
 
-  // Flash middleware - НЕ ОЧИЩАЕМ FLASH
+  // Flash middleware
   app.addHook('preHandler', (request, reply, done) => {
     // Инициализируем session.flash если его нет
     if (!request.session) {
@@ -117,7 +117,7 @@ export default async function buildApp() {
       request.session.flash[type] = message;
     };
     
-    // Передаем flash в locals (КОПИРУЕМ, чтобы оригинал остался)
+    // Передаем flash в locals
     reply.locals = reply.locals || {};
     reply.locals.flash = { ...request.session.flash };
     reply.locals.user = request.user;
@@ -135,8 +135,6 @@ export default async function buildApp() {
       reply.locals.user = user;
     }
   });
-
-  // НЕ ОЧИЩАЕМ FLASH В onResponse - УБИРАЕМ ЭТОТ ХУК
 
   // Настройка шаблонов
   app.register(view, {
