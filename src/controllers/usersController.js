@@ -219,6 +219,9 @@ export const deleteUser = async (request, reply) => {
       return reply.redirect('/users');
     }
     
+    // Устанавливаем flash сообщение ДО уничтожения сессии
+    reply.flash('success', 'Пользователь успешно удалён');
+    
     // Удаляем пользователя
     await User.query().deleteById(id);
     
@@ -227,13 +230,10 @@ export const deleteUser = async (request, reply) => {
       email: userToDelete.email,
     });
     
-    // Очищаем сессию только если удаляем текущего пользователя
-    if (request.session && request.session.userId === parseInt(id)) {
+    // Очищаем сессию
+    if (request.session) {
       request.session.destroy();
     }
-    
-    // Alert сообщение
-    reply.flash('success', 'Пользователь успешно удалён');
     
     return reply.redirect('/users');
   } catch (error) {
