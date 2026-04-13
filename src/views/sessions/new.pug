@@ -10,14 +10,14 @@ block content
           = flash.error
           button.btn-close(type='button' data-bs-dismiss='alert')
 
-      form(action='/session' method='POST')
+      form(action='/session' method='POST' novalidate)
         .mb-3
           label.form-label(for='data_email') Email
-          input.form-control(type='email' id='data_email' name='data[email]' required)
+          input.form-control(type='email' id='data_email' name='data[email]' value=(formData ? formData.email : ''))
         
         .mb-3
           label.form-label(for='data_password') Пароль
-          input.form-control(type='password' id='data_password' name='data[password]' required)
+          input.form-control(type='password' id='data_password' name='data[password]')
         
         .mb-3
           button.btn.btn-primary(type='submit') Войти
