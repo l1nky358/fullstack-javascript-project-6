@@ -3,16 +3,6 @@ extends ../layout
 block content
   h1.mb-4 Пользователи
 
-  if flash && flash.success
-    .alert.alert-success.alert-dismissible.fade-show(role='alert')
-      = flash.success
-      button.btn-close(type='button' data-bs-dismiss='alert')
-  
-  if flash && flash.error
-    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-      = flash.error
-      button.btn-close(type='button' data-bs-dismiss='alert')
-
   if users && users.length > 0
     table.table.table-striped
       thead
