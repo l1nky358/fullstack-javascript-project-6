@@ -204,8 +204,15 @@ export const deleteUser = async (request, reply) => {
   try {
     const { id } = request.params;
     
+    // Проверка, что пользователь существует
+    const userToDelete = await User.query().findById(id);
+    if (!userToDelete) {
+      reply.flash('error', 'Пользователь не найден');
+      return reply.redirect('/users');
+    }
+    
     // Проверка, что пользователь удаляет себя
-    if (request.user.id !== parseInt(id)) {
+    if (!request.user || request.user.id !== parseInt(id)) {
       rollbar.warning('Unauthorized delete attempt', {
         targetUserId: id,
         attemptedBy: request.user?.id,
@@ -237,7 +244,7 @@ export const deleteUser = async (request, reply) => {
       return reply.redirect('/users');
     }
     
-    const userEmail = request.user.email;
+    const userEmail = userToDelete.email;
     await User.query().deleteById(id);
     
     rollbar.info('User deleted successfully', {
@@ -245,7 +252,11 @@ export const deleteUser = async (request, reply) => {
       email: userEmail,
     });
     
-    request.session.destroy();
+    // Очищаем сессию только если удаляем текущего пользователя
+    if (request.session && request.session.userId === parseInt(id)) {
+      request.session.destroy();
+    }
+    
     reply.flash('success', 'Пользователь успешно удалён');
     return reply.redirect('/');
   } catch (error) {
@@ -253,7 +264,7 @@ export const deleteUser = async (request, reply) => {
       userId: request.params.id,
       currentUser: request.user?.id,
     });
-    reply.flash('error', 'Ошибка при удалении пользователя: ' + (error.message || 'Неизвестная ошибка'));
+    reply.flash('error', 'Ошибка при удалении пользователя');
     return reply.redirect('/users');
   }
 };
