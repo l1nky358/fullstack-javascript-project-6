@@ -15,12 +15,12 @@ export default async function configureAuth(app) {
     
     // Валидация
     if (!email || email.trim() === '') {
-      reply.flash('error', 'Email не может быть пустым');
+      reply.flash('error', 'Поле email не должно быть пустым');
       return reply.redirect('/session/new');
     }
     
     if (!password || password.trim() === '') {
-      reply.flash('error', 'Пароль не может быть пустым');
+      reply.flash('error', 'Поле пароля не должно быть пустым');
       return reply.redirect('/session/new');
     }
     
