@@ -24,9 +24,9 @@ block content
           input.form-control(type='email' id='data_email' name='data[email]' value=user.email required)
         
         .mb-3
-          label.form-label(for='data_password') Новый пароль (оставьте пустым, если не хотите менять)
-          input.form-control(type='password' id='data_password' name='data[password]')
+          label.form-label(for='data_password') Пароль
+          input.form-control(type='password' id='data_password' name='data[password]' placeholder='Оставьте пустым, чтобы не менять')
         
         .mb-3
-          button.btn.btn-primary(type='submit') Обновить
+          button.btn.btn-primary(type='submit') Изменить
           a.btn.btn-secondary.ms-2(href='/users') Отмена
