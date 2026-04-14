@@ -7,7 +7,7 @@ import Label from '../models/Label.js';
 export const listTasks = async (request, reply) => {
   try {
     const tasks = await Task.query()
-      .withGraphFetched('[creator, executor, status]')
+      .withGraphFetched('[creator, executor, status, labels]')
       .orderBy('id');
     
     return reply.view('tasks/index', {
@@ -25,7 +25,7 @@ export const listTasks = async (request, reply) => {
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   const task = await Task.query()
-    .withGraphFetched('[creator, executor, status]')
+    .withGraphFetched('[creator, executor, status, labels]')
     .findById(id);
   
   if (!task) {
@@ -70,18 +70,31 @@ export const createTask = async (request, reply) => {
     const taskData = request.body.data;
     taskData.creatorId = request.user.id;
     
+    // Преобразуем строки в числа
+    taskData.statusId = parseInt(taskData.statusId, 10);
+    if (taskData.executorId) {
+      taskData.executorId = parseInt(taskData.executorId, 10);
+    } else {
+      taskData.executorId = null;
+    }
+    
+    // Получаем выбранные метки
     const labelIds = taskData.labels || [];
     delete taskData.labels;
     
     const task = await Task.query().insert(taskData);
     
+    // Добавляем метки
     if (labelIds.length > 0) {
-      await task.$relatedQuery('labels').relate(labelIds);
+      const numericLabelIds = labelIds.map(id => parseInt(id, 10));
+      await task.$relatedQuery('labels').relate(numericLabelIds);
     }
     
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
   } catch (error) {
+    console.error('Create task error:', error);
+    
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const statuses = await TaskStatus.query().orderBy('id');
     const labels = await Label.query().orderBy('id');
@@ -106,7 +119,9 @@ export const editTaskForm = async (request, reply) => {
   }
   
   const { id } = request.params;
-  const task = await Task.query().findById(id);
+  const task = await Task.query()
+    .withGraphFetched('labels')
+    .findById(id);
   
   if (!task) {
     reply.flash('error', 'Задача не найдена');
@@ -148,14 +163,27 @@ export const updateTask = async (request, reply) => {
   
   try {
     const taskData = request.body.data;
+    
+    // Преобразуем строки в числа
+    if (taskData.statusId) {
+      taskData.statusId = parseInt(taskData.statusId, 10);
+    }
+    if (taskData.executorId) {
+      taskData.executorId = parseInt(taskData.executorId, 10);
+    } else {
+      taskData.executorId = null;
+    }
+    
     const labelIds = taskData.labels || [];
     delete taskData.labels;
     
     const task = await Task.query().patchAndFetchById(id, taskData);
     
+    // Обновляем связи с метками
     await task.$relatedQuery('labels').unrelate();
     if (labelIds.length > 0) {
-      await task.$relatedQuery('labels').relate(labelIds);
+      const numericLabelIds = labelIds.map(id => parseInt(id, 10));
+      await task.$relatedQuery('labels').relate(numericLabelIds);
     }
     
     reply.flash('success', 'Задача успешно обновлена');
