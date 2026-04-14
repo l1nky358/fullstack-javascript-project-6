@@ -2,6 +2,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/YOUR_PROJECT_ID/maintainability)](https://codeclimate.com/github/YOUR_USERNAME/fullstack-javascript-project-6/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/YOUR_PROJECT_ID/test_coverage)](https://codeclimate.com/github/YOUR_USERNAME/fullstack-javascript-project-6/test_coverage)
 [![Actions Status](https://github.com/l1nky358/fullstack-javascript-project-6/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/l1nky358/fullstack-javascript-project-6/actions)
+[Vercel deploy](fullstack-javascript-project-6-pecpwzer1-l1nky358s-projects.vercel.app)
 ## Описание
 
 Task Manager - это система управления задачами, построенная на Fastify. Позволяет создавать задачи, назначать исполнителей, управлять статусами и метками.
