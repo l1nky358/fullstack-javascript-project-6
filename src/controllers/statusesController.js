@@ -81,7 +81,7 @@ export const updateStatus = async (request, reply) => {
   try {
     const statusData = request.body.data;
     await TaskStatus.query().patchAndFetchById(id, statusData);
-    reply.flash('success', 'Статус успешно обновлен');
+    reply.flash('success', 'Статус успешно изменён');
     return reply.redirect('/statuses');
   } catch (error) {
     const status = await TaskStatus.query().findById(id);
@@ -116,7 +116,7 @@ export const deleteStatus = async (request, reply) => {
   
   try {
     await TaskStatus.query().deleteById(id);
-    reply.flash('success', 'Статус успешно удален');
+    reply.flash('success', 'Статус успешно удалён');
   } catch (error) {
     reply.flash('error', 'Ошибка при удалении статуса');
   }
