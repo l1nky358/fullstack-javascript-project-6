@@ -116,16 +116,6 @@ export const deleteLabel = async (request, reply) => {
 
   const { id } = request.params;
   
-  // Проверка, есть ли задачи с этой меткой
-  const labelWithTasks = await Label.query()
-    .findById(id)
-    .withGraphFetched('tasks');
-  
-  if (labelWithTasks.tasks && labelWithTasks.tasks.length > 0) {
-    reply.flash('error', 'Невозможно удалить метку, так как она используется в задачах');
-    return reply.redirect('/labels');
-  }
-  
   try {
     await Label.query().deleteById(id);
     reply.flash('success', 'Метка успешно удалена');
