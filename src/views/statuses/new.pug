@@ -3,11 +3,6 @@ extends ../layout
 block content
   h1.mb-4 Создание статуса
 
-  if flash && flash.error
-    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-      = flash.error
-      button.btn-close(type='button' data-bs-dismiss='alert')
-
   form(action='/statuses' method='POST')
     .mb-3
       label.form-label(for='data_name') Наименование
