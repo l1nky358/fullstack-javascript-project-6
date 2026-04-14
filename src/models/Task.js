@@ -50,18 +50,7 @@ export default class Task extends Model {
           to: 'task_statuses.id',
         },
       },
-      labels: {
-        relation: Model.ManyToManyRelation,
-        modelClass: () => import('./Label.js').then(m => m.default),
-        join: {
-          from: 'tasks.id',
-          through: {
-            from: 'task_labels.taskId',
-            to: 'task_labels.labelId',
-          },
-          to: 'labels.id',
-        },
-      },
+      // Убираем связь с labels из-за циклической зависимости
     };
   }
 
