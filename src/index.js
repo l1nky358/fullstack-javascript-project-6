@@ -102,24 +102,21 @@ export default async function buildApp() {
     saveUninitialized: false,
   });
 
-  // Flash middleware
+  // Flash middleware - без очистки flash
   app.addHook('preHandler', (request, reply, done) => {
-    // Если сессии нет, создаем временную для flash
     if (!request.session) {
-      request.session = { flash: {} };
+      request.session = {};
     }
     if (!request.session.flash) {
       request.session.flash = {};
     }
     
-    // Создаем метод flash для ответа
     reply.flash = (type, message) => {
       request.session.flash[type] = message;
     };
     
-    // Передаем flash в locals
     reply.locals = reply.locals || {};
-    reply.locals.flash = { ...request.session.flash };
+    reply.locals.flash = request.session.flash;
     reply.locals.user = request.user;
     reply.locals.t = t;
     request.t = t;
