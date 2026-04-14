@@ -6,22 +6,12 @@ block content
     if user
       a.btn.btn-primary(href='/statuses/new') Создать статус
 
-  if flash && flash.success
-    .alert.alert-success.alert-dismissible.fade-show(role='alert')
-      = flash.success
-      button.btn-close(type='button' data-bs-dismiss='alert')
-  
-  if flash && flash.error
-    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-      = flash.error
-      button.btn-close(type='button' data-bs-dismiss='alert')
-
   if statuses && statuses.length > 0
     table.table.table-striped
       thead
         tr
           th ID
-          th Название
+          th Наименование
           if user
             th Действия
       tbody
@@ -31,9 +21,8 @@ block content
             td= status.name
             if user
               td
-                a.btn.btn-sm.btn-primary(href=`/statuses/${status.id}/edit`) Редактировать
-                form.d-inline(action=`/statuses/${status.id}?_method=DELETE` method='POST')
-                  input(type='hidden' name='_method' value='DELETE')
+                a.btn.btn-sm.btn-primary(href=`/statuses/${status.id}/edit`) Изменить
+                form.d-inline(action=`/statuses/${status.id}/delete` method='POST')
                   button.btn.btn-sm.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
   else
     p.text-muted Статусы отсутствуют
