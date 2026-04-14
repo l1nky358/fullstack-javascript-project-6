@@ -8,11 +8,9 @@ block content
       = flash.error
       button.btn-close(type='button' data-bs-dismiss='alert')
 
-  form(action=`/tasks/${task.id}?_method=PATCH` method='POST')
-    input(type='hidden' name='_method' value='PATCH')
-    
+  form(action=`/tasks/${task.id}/update` method='POST')
     .mb-3
-      label.form-label(for='data_name') Название
+      label.form-label(for='data_name') Наименование
       input.form-control(type='text' id='data_name' name='data[name]' value=task.name required)
     
     .mb-3
@@ -22,7 +20,6 @@ block content
     .mb-3
       label.form-label(for='data_statusId') Статус
       select.form-control(id='data_statusId' name='data[statusId]' required)
-        option(value='') Выберите статус
         each status in statuses
           option(value=status.id selected=(task.statusId === status.id))= status.name
     
@@ -38,8 +35,8 @@ block content
       select.form-control(id='data_labels' name='data[labels][]' multiple size='5')
         each label in labels
           option(value=label.id selected=(task.labels && task.labels.some(l => l.id === label.id)))= label.name
-      small.form-text.text-muted Удерживайте Ctrl (или Cmd на Mac) для выбора нескольких меток
+      small.form-text.text-muted Удерживайте Ctrl для выбора нескольких меток
     
     .mb-3
-      button.btn.btn-primary(type='submit') Обновить
+      button.btn.btn-primary(type='submit') Изменить
       a.btn.btn-secondary.ms-2(href='/tasks') Отмена
