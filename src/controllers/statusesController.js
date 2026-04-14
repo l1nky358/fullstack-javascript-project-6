@@ -16,6 +16,11 @@ export const newStatusForm = async (request, reply) => {
     return reply.redirect('/session/new');
   }
   
+  // Очищаем старые flash сообщения при загрузке формы
+  if (request.session) {
+    request.session.flash = {};
+  }
+  
   return reply.view('statuses/new', {
     status: {},
     errors: null,
@@ -39,9 +44,6 @@ export const createStatus = async (request, reply) => {
   }
   
   if (Object.keys(errors).length > 0) {
-    if (request.session) {
-      request.session.flash = {};
-    }
     reply.flash('error', 'Не удалось создать статус');
     return reply.view('statuses/new', {
       status: statusData,
@@ -55,9 +57,6 @@ export const createStatus = async (request, reply) => {
     reply.flash('success', 'Статус успешно создан');
     return reply.redirect('/statuses');
   } catch (error) {
-    if (request.session) {
-      request.session.flash = {};
-    }
     reply.flash('error', 'Не удалось создать статус');
     return reply.view('statuses/new', {
       status: statusData,
