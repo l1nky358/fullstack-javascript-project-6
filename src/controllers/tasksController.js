@@ -7,7 +7,7 @@ import Label from '../models/Label.js';
 export const listTasks = async (request, reply) => {
   try {
     const tasks = await Task.query()
-      .withGraphFetched('[creator, executor, status, labels]')
+      .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
     
     return reply.view('tasks/index', {
@@ -25,7 +25,7 @@ export const listTasks = async (request, reply) => {
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   const task = await Task.query()
-    .withGraphFetched('[creator, executor, status, labels]')
+    .withGraphFetched('[creator, executor, status]')
     .findById(id);
   
   if (!task) {
@@ -106,9 +106,7 @@ export const editTaskForm = async (request, reply) => {
   }
   
   const { id } = request.params;
-  const task = await Task.query()
-    .withGraphFetched('labels')
-    .findById(id);
+  const task = await Task.query().findById(id);
   
   if (!task) {
     reply.flash('error', 'Задача не найдена');
