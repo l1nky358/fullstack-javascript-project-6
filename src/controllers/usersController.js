@@ -4,7 +4,7 @@ import rollbar from '../lib/rollbar.js';
 // Список всех пользователей
 export const listUsers = async (request, reply) => {
   try {
-    const users = await User.query().select('id', 'firstName', 'lastName', 'email').orderBy('id');
+    const users = await User.query().select('id', 'firstName', 'lastName', 'email', 'createdAt').orderBy('id');
     return reply.view('users/index', {
       users,
       title: 'Пользователи',
@@ -219,9 +219,6 @@ export const deleteUser = async (request, reply) => {
       return reply.redirect('/users');
     }
     
-    // Устанавливаем flash сообщение ДО удаления сессии
-    reply.flash('success', 'Пользователь успешно удалён');
-    
     // Удаляем пользователя
     await User.query().deleteById(id);
     
@@ -230,11 +227,8 @@ export const deleteUser = async (request, reply) => {
       email: userToDelete.email,
     });
     
-    // Очищаем сессию
-    if (request.session) {
-      request.session.destroy();
-    }
-    
+    // ТОЧНО ТАК ЖЕ КАК В updateUser
+    if (reply.flash) reply.flash('success', 'Пользователь успешно удалён');
     return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User deletion failed', error, {
