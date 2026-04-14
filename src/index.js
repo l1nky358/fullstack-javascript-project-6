@@ -102,7 +102,7 @@ export default async function buildApp() {
     saveUninitialized: false,
   });
 
-  // Flash middleware - без очистки flash
+  // Flash middleware - простая версия
   app.addHook('preHandler', (request, reply, done) => {
     if (!request.session) {
       request.session = {};
