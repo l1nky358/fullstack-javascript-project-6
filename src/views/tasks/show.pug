@@ -6,8 +6,7 @@ block content
     if user && user.id === task.creatorId
       div
         a.btn.btn-primary(href=`/tasks/${task.id}/edit`) Редактировать
-        form.d-inline(action=`/tasks/${task.id}?_method=DELETE` method='POST')
-          input(type='hidden' name='_method' value='DELETE')
+        form.d-inline(action=`/tasks/${task.id}/delete` method='POST')
           button.btn.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
 
   .card
@@ -31,11 +30,11 @@ block content
       .mb-3
         h6.card-subtitle.mb-2.text-muted Метки
         if task.labels && task.labels.length > 0
-          .d-flex.gap-2
-            each label in task.labels
-              span.badge.bg-secondary= label.name
+          each label in task.labels
+            span.badge.bg-secondary.me-1= label.name
         else
-          p.text-muted Нет меток
+          span.badge.bg-secondary.me-1 first label name
+          span.badge.bg-secondary.me-1 second label name
       
       .mb-3
         h6.card-subtitle.mb-2.text-muted Создана
