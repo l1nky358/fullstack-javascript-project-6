@@ -68,7 +68,7 @@ export const createUser = async (request, reply) => {
   
   // Если есть ошибки - показываем форму с ошибками
   if (Object.keys(errors).length > 0) {
-    if (reply.flash) reply.flash('error', 'Не удалось зарегистрировать');
+    reply.flash('error', 'Не удалось зарегистрировать');
     return reply.view('users/new', {
       title: 'Регистрация',
       errors: errors,
@@ -78,7 +78,7 @@ export const createUser = async (request, reply) => {
   
   try {
     await User.query().insert(userData);
-    if (reply.flash) reply.flash('success', 'Пользователь успешно зарегистрирован');
+    reply.flash('success', 'Пользователь успешно зарегистрирован');
     return reply.redirect('/');
   } catch (error) {
     rollbar.error('User registration failed', error, {
@@ -87,7 +87,7 @@ export const createUser = async (request, reply) => {
       lastName: userData.lastName,
     });
     
-    if (reply.flash) reply.flash('error', 'Не удалось зарегистрировать');
+    reply.flash('error', 'Не удалось зарегистрировать');
     errors.general = 'Ошибка при регистрации';
     return reply.view('users/new', {
       title: 'Регистрация',
