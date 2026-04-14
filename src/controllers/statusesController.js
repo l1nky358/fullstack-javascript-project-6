@@ -30,6 +30,11 @@ export const createStatus = async (request, reply) => {
     return reply.redirect('/session/new');
   }
 
+  // Очищаем старые flash сообщения
+  if (request.session) {
+    request.session.flash = {};
+  }
+
   const statusData = request.body.data;
   const errors = {};
   
@@ -38,7 +43,6 @@ export const createStatus = async (request, reply) => {
     errors.name = 'Наименование не должно быть пустым';
   }
   
-  // Если есть ошибки - показываем форму с ошибками
   if (Object.keys(errors).length > 0) {
     reply.flash('error', 'Не удалось создать статус');
     return reply.view('statuses/new', {
