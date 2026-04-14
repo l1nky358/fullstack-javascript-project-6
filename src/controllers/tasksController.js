@@ -7,7 +7,7 @@ import Label from '../models/Label.js';
 export const listTasks = async (request, reply) => {
   try {
     const tasks = await Task.query()
-      .withGraphFetched('[creator, executor, status, labels]')
+      .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
     
     return reply.view('tasks/index', {
@@ -24,19 +24,25 @@ export const listTasks = async (request, reply) => {
 // Страница просмотра задачи
 export const showTask = async (request, reply) => {
   const { id } = request.params;
-  const task = await Task.query()
-    .withGraphFetched('[creator, executor, status, labels]')
-    .findById(id);
-  
-  if (!task) {
-    reply.flash('error', 'Задача не найдена');
+  try {
+    const task = await Task.query()
+      .withGraphFetched('[creator, executor, status]')
+      .findById(id);
+    
+    if (!task) {
+      reply.flash('error', 'Задача не найдена');
+      return reply.redirect('/tasks');
+    }
+    
+    return reply.view('tasks/show', {
+      task,
+      title: task.name,
+    });
+  } catch (error) {
+    console.error('Show task error:', error);
+    reply.flash('error', 'Ошибка при загрузке задачи');
     return reply.redirect('/tasks');
   }
-  
-  return reply.view('tasks/show', {
-    task,
-    title: task.name,
-  });
 };
 
 // Форма создания задачи
