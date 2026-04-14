@@ -14,7 +14,7 @@ export const listUsers = async (request, reply) => {
       userId: request.user?.id,
       url: request.url,
     });
-    if (reply.flash) reply.flash('error', 'Ошибка при загрузке списка пользователей');
+    reply.flash('error', 'Ошибка при загрузке списка пользователей');
     return reply.redirect('/');
   }
 };
@@ -29,7 +29,7 @@ export const newUserForm = async (request, reply) => {
     });
   } catch (error) {
     rollbar.error('Error loading registration form', error);
-    if (reply.flash) reply.flash('error', 'Ошибка при загрузке формы регистрации');
+    reply.flash('error', 'Ошибка при загрузке формы регистрации');
     return reply.redirect('/');
   }
 };
@@ -108,7 +108,7 @@ export const editUserForm = async (request, reply) => {
         userId: id,
         requestedBy: request.user?.id,
       });
-      if (reply.flash) reply.flash('error', 'Пользователь не найден');
+      reply.flash('error', 'Пользователь не найден');
       return reply.redirect('/users');
     }
     
@@ -118,7 +118,7 @@ export const editUserForm = async (request, reply) => {
         targetUserId: id,
         attemptedBy: request.user?.id,
       });
-      if (reply.flash) reply.flash('error', 'Вы можете редактировать только свой профиль');
+      reply.flash('error', 'Вы можете редактировать только свой профиль');
       return reply.redirect('/users');
     }
     
@@ -131,7 +131,7 @@ export const editUserForm = async (request, reply) => {
       userId: request.params.id,
       currentUser: request.user?.id,
     });
-    if (reply.flash) reply.flash('error', 'Ошибка при загрузке формы редактирования');
+    reply.flash('error', 'Ошибка при загрузке формы редактирования');
     return reply.redirect('/users');
   }
 };
@@ -147,7 +147,7 @@ export const updateUser = async (request, reply) => {
         targetUserId: id,
         attemptedBy: request.user?.id,
       });
-      if (reply.flash) reply.flash('error', 'Вы можете редактировать только свой профиль');
+      reply.flash('error', 'Вы можете редактировать только свой профиль');
       return reply.redirect('/users');
     }
     
@@ -165,7 +165,7 @@ export const updateUser = async (request, reply) => {
         .whereNot('id', id);
       
       if (existingUser) {
-        if (reply.flash) reply.flash('error', 'Пользователь с таким email уже существует');
+        reply.flash('error', 'Пользователь с таким email уже существует');
         const user = await User.query().findById(id);
         return reply.view('users/edit', {
           user: { ...user, ...userData },
@@ -182,7 +182,7 @@ export const updateUser = async (request, reply) => {
       updatedFields: Object.keys(userData),
     });
     
-    if (reply.flash) reply.flash('success', 'Пользователь успешно изменён');
+    reply.flash('success', 'Пользователь успешно изменён');
     return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User update failed', error, {
@@ -192,7 +192,7 @@ export const updateUser = async (request, reply) => {
     });
     
     const user = await User.query().findById(request.params.id);
-    if (reply.flash) reply.flash('error', 'Ошибка при обновлении: ' + (error.message || 'Неизвестная ошибка'));
+    reply.flash('error', 'Ошибка при обновлении: ' + (error.message || 'Неизвестная ошибка'));
     return reply.view('users/edit', {
       user: { ...user, ...request.body.data },
       errors: error.data,
@@ -229,7 +229,7 @@ export const deleteUser = async (request, reply) => {
       email: userToDelete.email,
     });
     
-    if (reply.flash) reply.flash('success', 'Пользователь успешно удалён');
+    reply.flash('success', 'Пользователь успешно удалён');
     return reply.redirect('/users');
   } catch (error) {
     rollbar.error('User deletion failed', error, {
