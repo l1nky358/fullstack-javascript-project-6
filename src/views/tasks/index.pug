@@ -2,9 +2,17 @@ extends ../layout
 
 block content
   .d-flex.justify-content-between.align-items-center.mb-4
-    h1 Только мои задачи
+    h1 Задачи
     if user
       a.btn.btn-primary(href='/tasks/new') Создать задачу
+
+  // Чекбокс для фильтрации
+  .mb-3
+    form(method='GET' action='/tasks')
+      .form-check
+        input.form-check-input(type='checkbox' id='isCreatorUser' name='isCreatorUser' checked=(filters && filters.isCreatorUser))
+        label.form-check-label(for='isCreatorUser') Только мои задачи
+      button.btn.btn-sm.btn-primary.mt-2(type='submit') Применить
 
   if tasks && tasks.length > 0
     .table-responsive
