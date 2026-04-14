@@ -68,6 +68,7 @@ export const createUser = async (request, reply) => {
   
   // Если есть ошибки - показываем форму с ошибками
   if (Object.keys(errors).length > 0) {
+    if (reply.flash) reply.flash('error', 'Не удалось зарегистрировать');
     return reply.view('users/new', {
       title: 'Регистрация',
       errors: errors,
@@ -86,6 +87,7 @@ export const createUser = async (request, reply) => {
       lastName: userData.lastName,
     });
     
+    if (reply.flash) reply.flash('error', 'Не удалось зарегистрировать');
     errors.general = 'Ошибка при регистрации';
     return reply.view('users/new', {
       title: 'Регистрация',
@@ -227,7 +229,6 @@ export const deleteUser = async (request, reply) => {
       email: userToDelete.email,
     });
     
-    // ТОЧНО ТАК ЖЕ КАК В updateUser
     if (reply.flash) reply.flash('success', 'Пользователь успешно удалён');
     return reply.redirect('/users');
   } catch (error) {
