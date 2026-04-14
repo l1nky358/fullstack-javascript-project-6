@@ -1,8 +1,6 @@
 extends ../layout
 
 block content
-  h1.mb-4 Пользователи
-
   if flash && flash.success
     .alert.alert-success.alert-dismissible.fade-show(role='alert')
       = flash.success
@@ -13,26 +11,28 @@ block content
       = flash.error
       button.btn-close(type='button' data-bs-dismiss='alert')
 
+  h1.mb-4 Пользователи
+
   if users && users.length > 0
     table.table.table-striped
       thead
         tr
           th ID
-          th Имя
-          th Фамилия
+          th Полное имя
           th Email
+          th Дата создания
           if user
             th Действия
       tbody
         each userItem in users
           tr
             td= userItem.id
-            td= userItem.firstName
-            td= userItem.lastName
+            td #{userItem.firstName} #{userItem.lastName}
             td= userItem.email
+            td= userItem.createdAt ? new Date(userItem.createdAt).toLocaleString() : '-'
             if user && user.id === userItem.id
               td
-                a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) Редактировать
+                a.btn.btn-sm.btn-primary(href=`/users/${userItem.id}/edit`) Изменить
                 form.d-inline(action=`/users/${userItem.id}/delete` method='POST')
                   button.btn.btn-sm.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
   else
