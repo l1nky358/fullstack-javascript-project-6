@@ -16,11 +16,6 @@ export const newLabelForm = async (request, reply) => {
     return reply.redirect('/session/new');
   }
   
-  // Очищаем старые flash сообщения
-  if (request.session) {
-    request.session.flash = {};
-  }
-  
   return reply.view('labels/new', {
     label: {},
     errors: null,
@@ -33,11 +28,6 @@ export const createLabel = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
     return reply.redirect('/session/new');
-  }
-
-  // Очищаем старые flash сообщения
-  if (request.session) {
-    request.session.flash = {};
   }
 
   const labelData = request.body.data;
