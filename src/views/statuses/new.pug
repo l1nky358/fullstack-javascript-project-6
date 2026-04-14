@@ -6,7 +6,16 @@ block content
   form(action='/statuses' method='POST')
     .mb-3
       label.form-label(for='data_name') Наименование
-      input.form-control(type='text' id='data_name' name='data[name]' value=(status ? status.name : '') required)
+      input.form-control(
+        type='text'
+        id='data_name'
+        name='data[name]'
+        value=(status ? status.name : '')
+        class={ 'is-invalid': errors && errors.name }
+      )
+      if errors && errors.name
+        .invalid-feedback
+          = errors.name
     
     .mb-3
       button.btn.btn-primary(type='submit') Создать
