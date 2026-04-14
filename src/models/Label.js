@@ -18,22 +18,7 @@ export default class Label extends Model {
     };
   }
 
-  static get relationMappings() {
-    return {
-      tasks: {
-        relation: Model.ManyToManyRelation,
-        modelClass: () => import('./Task.js').then(m => m.default),
-        join: {
-          from: 'labels.id',
-          through: {
-            from: 'task_labels.labelId',
-            to: 'task_labels.taskId',
-          },
-          to: 'tasks.id',
-        },
-      },
-    };
-  }
+  // Удаляем relationMappings полностью
 
   $beforeInsert() {
     this.createdAt = new Date().toISOString();
