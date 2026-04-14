@@ -1,6 +1,5 @@
 import Label from '../models/Label.js';
 
-// Список всех меток
 export const listLabels = async (request, reply) => {
   const labels = await Label.query().orderBy('id');
   return reply.view('labels/index', {
@@ -9,11 +8,14 @@ export const listLabels = async (request, reply) => {
   });
 };
 
-// Форма создания метки
 export const newLabelForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
     return reply.redirect('/session/new');
+  }
+  
+  if (request.session) {
+    request.session.flash = {};
   }
   
   return reply.view('labels/new', {
@@ -23,17 +25,19 @@ export const newLabelForm = async (request, reply) => {
   });
 };
 
-// Создание метки
 export const createLabel = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
     return reply.redirect('/session/new');
   }
 
+  if (request.session) {
+    request.session.flash = {};
+  }
+
   const labelData = request.body.data;
   const errors = {};
   
-  // Валидация
   if (!labelData.name || labelData.name.trim() === '') {
     errors.name = 'Наименование не должно быть пустым';
   }
@@ -61,7 +65,6 @@ export const createLabel = async (request, reply) => {
   }
 };
 
-// Форма редактирования метки
 export const editLabelForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -82,7 +85,6 @@ export const editLabelForm = async (request, reply) => {
   });
 };
 
-// Обновление метки
 export const updateLabel = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -107,7 +109,6 @@ export const updateLabel = async (request, reply) => {
   }
 };
 
-// Удаление метки
 export const deleteLabel = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
