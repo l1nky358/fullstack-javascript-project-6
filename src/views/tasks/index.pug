@@ -6,16 +6,6 @@ block content
     if user
       a.btn.btn-primary(href='/tasks/new') Создать задачу
 
-  if flash && flash.success
-    .alert.alert-success.alert-dismissible.fade-show(role='alert')
-      = flash.success
-      button.btn-close(type='button' data-bs-dismiss='alert')
-  
-  if flash && flash.error
-    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-      = flash.error
-      button.btn-close(type='button' data-bs-dismiss='alert')
-
   if tasks && tasks.length > 0
     .table-responsive
       table.table.table-striped
