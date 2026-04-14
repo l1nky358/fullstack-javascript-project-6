@@ -14,10 +14,6 @@ export const newLabelForm = async (request, reply) => {
     return reply.redirect('/session/new');
   }
   
-  if (request.session) {
-    request.session.flash = {};
-  }
-  
   return reply.view('labels/new', {
     label: {},
     errors: null,
@@ -31,10 +27,6 @@ export const createLabel = async (request, reply) => {
     return reply.redirect('/session/new');
   }
 
-  if (request.session) {
-    request.session.flash = {};
-  }
-
   const labelData = request.body.data;
   const errors = {};
   
@@ -43,6 +35,7 @@ export const createLabel = async (request, reply) => {
   }
   
   if (Object.keys(errors).length > 0) {
+    // Устанавливаем flash и показываем форму с ошибками
     reply.flash('error', 'Не удалось создать метку');
     return reply.view('labels/new', {
       label: labelData,
