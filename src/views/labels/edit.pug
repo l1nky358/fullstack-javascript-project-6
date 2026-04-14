@@ -3,18 +3,20 @@ extends ../layout
 block content
   h1.mb-4 Редактирование метки
 
-  if flash && flash.error
-    .alert.alert-danger.alert-dismissible.fade-show(role='alert')
-      = flash.error
-      button.btn-close(type='button' data-bs-dismiss='alert')
-
-  form(action=`/labels/${label.id}?_method=PATCH` method='POST')
-    input(type='hidden' name='_method' value='PATCH')
+  form(action=`/labels/${label.id}/update` method='POST')
+    .mb-3
+      label.form-label(for='data_name') Наименование
+      input.form-control(
+        type='text'
+        id='data_name'
+        name='data[name]'
+        value=label.name
+        class={ 'is-invalid': errors && errors.name }
+      )
+      if errors && errors.name
+        .invalid-feedback
+          = errors.name
     
     .mb-3
-      label.form-label(for='data_name') Название
-      input.form-control(type='text' id='data_name' name='data[name]' value=label.name required)
-    
-    .mb-3
-      button.btn.btn-primary(type='submit') Обновить
+      button.btn.btn-primary(type='submit') Изменить
       a.btn.btn-secondary.ms-2(href='/labels') Отмена
