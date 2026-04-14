@@ -16,43 +16,6 @@ block content
       = flash.error
       button.btn-close(type='button' data-bs-dismiss='alert')
 
-  // Форма фильтрации
-  .card.mb-4
-    .card-body
-      form(method='GET' action='/tasks')
-        .row.g-3.align-items-end
-          .col-md-3
-            label.form-label(for='statusId') Статус
-            select.form-control(id='statusId' name='statusId')
-              option(value='') Все статусы
-              each status in statuses
-                option(value=status.id selected=(filters && filters.statusId == status.id))= status.name
-          
-          .col-md-3
-            label.form-label(for='executorId') Исполнитель
-            select.form-control(id='executorId' name='executorId')
-              option(value='') Все исполнители
-              each userItem in users
-                option(value=userItem.id selected=(filters && filters.executorId == userItem.id))= `${userItem.firstName} ${userItem.lastName}`
-          
-          .col-md-3
-            label.form-label(for='labelId') Метка
-            select.form-control(id='labelId' name='labelId')
-              option(value='') Все метки
-              each label in labels
-                option(value=label.id selected=(filters && filters.labelId == label.id))= label.name
-          
-          .col-md-2
-            .form-check
-              input.form-check-input(type='checkbox' id='isCreatorUser' name='isCreatorUser' checked=(filters && filters.isCreatorUser))
-              label.form-check-label(for='isCreatorUser') Только мои задачи
-          
-          .col-md-1
-            button.btn.btn-primary.w-100(type='submit') Применить
-          
-          .col-md-1
-            a.btn.btn-secondary.w-100(href='/tasks') Сбросить
-
   if tasks && tasks.length > 0
     .table-responsive
       table.table.table-striped
@@ -72,32 +35,19 @@ block content
               td= task.id
               td
                 a(href=`/tasks/${task.id}`)= task.name
-              td
-                span.badge(style=`background-color: ${task.status?.color || '#6c757d'}`)= task.status ? task.status.name : '-'
+              td= task.status ? task.status.name : '-'
               td= task.creator ? `${task.creator.firstName} ${task.creator.lastName}` : '-'
               td= task.executor ? `${task.executor.firstName} ${task.executor.lastName}` : 'Не назначен'
               td
                 if task.labels && task.labels.length > 0
-                  .d-flex.gap-1.flex-wrap
-                    each label in task.labels.slice(0, 3)
-                      span.badge.bg-secondary.me-1= label.name
-                    if task.labels.length > 3
-                      span.badge.bg-secondary +#{task.labels.length - 3}
+                  each label in task.labels
+                    span.badge.bg-secondary.me-1= label.name
                 else
                   span.text-muted —
               if user && user.id === task.creatorId
                 td
-                  a.btn.btn-sm.btn-primary(href=`/tasks/${task.id}/edit`) Редактировать
-                  form.d-inline(action=`/tasks/${task.id}?_method=DELETE` method='POST')
-                    input(type='hidden' name='_method' value='DELETE')
+                  a.btn.btn-sm.btn-primary(href=`/tasks/${task.id}/edit`) Изменить
+                  form.d-inline(action=`/tasks/${task.id}/delete` method='POST')
                     button.btn.btn-sm.btn-danger.ms-2(type='submit' onclick='return confirm("Вы уверены?")') Удалить
-              else if user
-                td
-                  span.text-muted —
   else
-    .alert.alert-info
-      | Задачи не найдены. 
-      if user
-        a(href='/tasks/new') Создайте первую задачу!
-      else
-        a(href='/session/new') Войдите, чтобы создать задачу
+    p.text-muted Задачи отсутствуют
