@@ -18,6 +18,7 @@ export const newLabelForm = async (request, reply) => {
   
   return reply.view('labels/new', {
     label: {},
+    errors: null,
     title: 'Создание метки',
   });
 };
@@ -29,16 +30,32 @@ export const createLabel = async (request, reply) => {
     return reply.redirect('/session/new');
   }
 
+  const labelData = request.body.data;
+  const errors = {};
+  
+  // Валидация
+  if (!labelData.name || labelData.name.trim() === '') {
+    errors.name = 'Наименование не должно быть пустым';
+  }
+  
+  if (Object.keys(errors).length > 0) {
+    reply.flash('error', 'Не удалось создать метку');
+    return reply.view('labels/new', {
+      label: labelData,
+      errors: errors,
+      title: 'Создание метки',
+    });
+  }
+  
   try {
-    const labelData = request.body.data;
     await Label.query().insert(labelData);
     reply.flash('success', 'Метка успешно создана');
     return reply.redirect('/labels');
   } catch (error) {
-    reply.flash('error', 'Ошибка при создании метки');
+    reply.flash('error', 'Не удалось создать метку');
     return reply.view('labels/new', {
-      label: request.body.data,
-      errors: error.data,
+      label: labelData,
+      errors: { name: 'Ошибка при создании метки' },
       title: 'Создание метки',
     });
   }
@@ -77,7 +94,7 @@ export const updateLabel = async (request, reply) => {
   try {
     const labelData = request.body.data;
     await Label.query().patchAndFetchById(id, labelData);
-    reply.flash('success', 'Метка успешно обновлена');
+    reply.flash('success', 'Метка успешно изменена');
     return reply.redirect('/labels');
   } catch (error) {
     const label = await Label.query().findById(id);
