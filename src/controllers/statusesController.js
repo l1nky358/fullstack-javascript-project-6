@@ -18,6 +18,7 @@ export const newStatusForm = async (request, reply) => {
   
   return reply.view('statuses/new', {
     status: {},
+    errors: null,
     title: 'Создание статуса',
   });
 };
@@ -29,16 +30,33 @@ export const createStatus = async (request, reply) => {
     return reply.redirect('/session/new');
   }
 
+  const statusData = request.body.data;
+  const errors = {};
+  
+  // Валидация
+  if (!statusData.name || statusData.name.trim() === '') {
+    errors.name = 'Наименование не должно быть пустым';
+  }
+  
+  // Если есть ошибки - показываем форму с ошибками
+  if (Object.keys(errors).length > 0) {
+    reply.flash('error', 'Не удалось создать статус');
+    return reply.view('statuses/new', {
+      status: statusData,
+      errors: errors,
+      title: 'Создание статуса',
+    });
+  }
+  
   try {
-    const statusData = request.body.data;
     await TaskStatus.query().insert(statusData);
     reply.flash('success', 'Статус успешно создан');
     return reply.redirect('/statuses');
   } catch (error) {
-    reply.flash('error', 'Ошибка при создании статуса');
+    reply.flash('error', 'Не удалось создать статус');
     return reply.view('statuses/new', {
-      status: request.body.data,
-      errors: error.data,
+      status: statusData,
+      errors: { name: 'Ошибка при создании статуса' },
       title: 'Создание статуса',
     });
   }
