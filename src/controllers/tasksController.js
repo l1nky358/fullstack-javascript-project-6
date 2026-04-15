@@ -9,17 +9,17 @@ export const listTasks = async (request, reply) => {
     const { status, executor, label_id, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
-    // Базовый запрос - БЕЗ labels (если связи нет)
+    // Базовый запрос
     let query = Task.query()
       .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
     
     // Применяем фильтры
-    if (status) {
+    if (status && status !== '') {
       query = query.where('statusId', parseInt(status, 10));
     }
     
-    if (executor) {
+    if (executor && executor !== '') {
       query = query.where('executorId', parseInt(executor, 10));
     }
     
@@ -29,30 +29,38 @@ export const listTasks = async (request, reply) => {
     
     let tasks;
     
-    // Фильтр по метке (используем прямой запрос к БД)
+    // Фильтр по метке
     if (label_id && label_id !== '') {
-      // Проверяем существование таблицы task_labels
       try {
-        // Получаем ID задач, у которых есть указанная метка
-        const tasksWithLabel = await Task.knex()
-          .select('taskId')
-          .from('task_labels')
-          .where('labelId', parseInt(label_id, 10));
+        // Проверяем существование таблицы task_labels
+        const hasTable = await Task.knex().schema.hasTable('task_labels');
         
-        const taskIds = tasksWithLabel.map(t => t.taskId);
-        
-        if (taskIds.length === 0) {
-          tasks = [];
+        if (hasTable) {
+          // Получаем ID задач с указанной меткой
+          const tasksWithLabel = await Task.knex()
+            .select('taskId')
+            .from('task_labels')
+            .where('labelId', parseInt(label_id, 10));
+          
+          const taskIds = tasksWithLabel.map(t => t.taskId);
+          
+          if (taskIds.length === 0) {
+            tasks = [];
+          } else {
+            // Применяем остальные фильтры
+            query = query.whereIn('id', taskIds);
+            tasks = await query;
+          }
         } else {
-          query = query.whereIn('id', taskIds);
+          // Если таблицы нет, игнорируем фильтр по метке
           tasks = await query;
         }
       } catch (error) {
-        // Если таблицы task_labels нет, просто игнорируем фильтр по метке
         console.error('Error filtering by label:', error);
         tasks = await query;
       }
     } else {
+      // Без фильтра по метке - показываем все задачи
       tasks = await query;
     }
     
@@ -60,6 +68,9 @@ export const listTasks = async (request, reply) => {
     const statuses = await TaskStatus.query().orderBy('id');
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const labels = await Label.query().orderBy('id');
+    
+    // Для отладки - выводим в консоль количество задач
+    console.log(`Found ${tasks.length} tasks with filters:`, { status, executor, label_id, isCreatorUser });
     
     return reply.view('tasks/index', {
       tasks,
@@ -82,7 +93,8 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Страница просмотра задачи
+// Остальные функции (showTask, newTaskForm, createTask, editTaskForm, updateTask, deleteTask)
+// остаются без изменений как в предыдущей версии
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
@@ -107,7 +119,6 @@ export const showTask = async (request, reply) => {
   }
 };
 
-// Форма создания задачи
 export const newTaskForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -128,7 +139,6 @@ export const newTaskForm = async (request, reply) => {
   });
 };
 
-// Создание задачи
 export const createTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -139,7 +149,6 @@ export const createTask = async (request, reply) => {
     const taskData = request.body.data;
     taskData.creatorId = request.user.id;
     
-    // Преобразуем строки в числа
     taskData.statusId = parseInt(taskData.statusId, 10);
     if (taskData.executorId) {
       taskData.executorId = parseInt(taskData.executorId, 10);
@@ -149,7 +158,6 @@ export const createTask = async (request, reply) => {
     
     const task = await Task.query().insert(taskData);
     
-    // Добавляем метки, если они есть
     if (taskData.labels && taskData.labels.length > 0) {
       try {
         await task.$relatedQuery('labels').relate(taskData.labels);
@@ -180,7 +188,6 @@ export const createTask = async (request, reply) => {
   }
 };
 
-// Форма редактирования задачи
 export const editTaskForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -214,7 +221,6 @@ export const editTaskForm = async (request, reply) => {
   });
 };
 
-// Обновление задачи
 export const updateTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -237,7 +243,6 @@ export const updateTask = async (request, reply) => {
   try {
     const taskData = request.body.data;
     
-    // Преобразуем строки в числа
     if (taskData.statusId) {
       taskData.statusId = parseInt(taskData.statusId, 10);
     }
@@ -249,7 +254,6 @@ export const updateTask = async (request, reply) => {
     
     await Task.query().patchAndFetchById(id, taskData);
     
-    // Обновляем метки
     if (taskData.labels) {
       try {
         await existingTask.$relatedQuery('labels').unrelate();
@@ -284,7 +288,6 @@ export const updateTask = async (request, reply) => {
   }
 };
 
-// Удаление задачи
 export const deleteTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -305,11 +308,10 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
-    // Удаляем связи с метками
     try {
       await task.$relatedQuery('labels').unrelate();
     } catch (error) {
-      // Игнорируем ошибку, если связи нет
+      // Игнорируем ошибку
     }
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
