@@ -6,12 +6,12 @@ import Label from '../models/Label.js';
 // Список всех задач
 export const listTasks = async (request, reply) => {
   try {
-    const { status, executor, label, isCreatorUser } = request.query;
+    const { status, executor, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
-    // Базовый запрос с жадной загрузкой связей
+    // Базовый запрос - БЕЗ labels (если связи нет)
     let query = Task.query()
-      .withGraphFetched('[creator, executor, status, labels]')
+      .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
     
     // Применяем фильтры
@@ -25,14 +25,6 @@ export const listTasks = async (request, reply) => {
     
     if (isCreatorUser === 'on' && userId) {
       query = query.where('creatorId', userId);
-    }
-    
-    // Фильтрация по метке
-    if (label) {
-      query = query.whereExists(
-        Task.relatedQuery('labels')
-          .where('labels.id', parseInt(label, 10))
-      );
     }
     
     const tasks = await query;
@@ -63,7 +55,7 @@ export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
     const task = await Task.query()
-      .withGraphFetched('[creator, executor, status, labels]')
+      .withGraphFetched('[creator, executor, status]')
       .findById(id);
     
     if (!task) {
@@ -123,17 +115,7 @@ export const createTask = async (request, reply) => {
       taskData.executorId = null;
     }
     
-    // Получаем выбранные метки
-    const labelIds = taskData.labels || [];
-    delete taskData.labels;
-    
     const task = await Task.query().insert(taskData);
-    
-    // Добавляем метки
-    if (labelIds.length > 0) {
-      const numericLabelIds = labelIds.map(id => parseInt(id, 10));
-      await task.$relatedQuery('labels').relate(numericLabelIds);
-    }
     
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
@@ -165,9 +147,7 @@ export const editTaskForm = async (request, reply) => {
   }
   
   const { id } = request.params;
-  const task = await Task.query()
-    .withGraphFetched('labels')
-    .findById(id);
+  const task = await Task.query().findById(id);
   
   if (!task) {
     reply.flash('error', 'Задача не найдена');
@@ -226,17 +206,7 @@ export const updateTask = async (request, reply) => {
       taskData.executorId = null;
     }
     
-    const labelIds = taskData.labels || [];
-    delete taskData.labels;
-    
-    const task = await Task.query().patchAndFetchById(id, taskData);
-    
-    // Обновляем связи с метками
-    await task.$relatedQuery('labels').unrelate();
-    if (labelIds.length > 0) {
-      const numericLabelIds = labelIds.map(id => parseInt(id, 10));
-      await task.$relatedQuery('labels').relate(numericLabelIds);
-    }
+    await Task.query().patchAndFetchById(id, taskData);
     
     reply.flash('success', 'Задача успешно обновлена');
     return reply.redirect('/tasks');
