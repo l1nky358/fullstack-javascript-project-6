@@ -11,7 +11,7 @@ export const listTasks = async (request, reply) => {
     
     console.log('Query params:', { status, assigned_to_id, label, isCreatorUser });
     
-    // Базовый запрос
+    // Базовый запрос - НЕ используем withGraphFetched для labels, чтобы избежать ошибок
     let query = Task.query()
       .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
@@ -65,6 +65,7 @@ export const listTasks = async (request, reply) => {
     const labels = await Label.query().orderBy('id');
     
     console.log(`Total tasks found: ${tasks.length}`);
+    console.log('Tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
     
     return reply.view('tasks/index', {
       tasks,
@@ -87,117 +88,6 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Функция для создания тестовых связей задач с метками
-const ensureTestTaskLabels = async () => {
-  try {
-    // Проверяем, есть ли задачи
-    const tasks = await Task.query();
-    const labels = await Label.query();
-    
-    if (tasks.length >= 2 && labels.length >= 1) {
-      // Для второй задачи (id=2) добавляем первую метку (id=1)
-      const existingLink = await Task.knex()
-        .select('*')
-        .from('task_labels')
-        .where('taskId', 2)
-        .andWhere('labelId', 1)
-        .first();
-      
-      if (!existingLink && tasks.find(t => t.id === 2)) {
-        await Task.knex().insert({
-          taskId: 2,
-          labelId: 1
-        }).into('task_labels');
-        console.log('Added label 1 to task 2');
-      }
-      
-      // Для третьей задачи (id=3) добавляем вторую метку (id=2)
-      const existingLink2 = await Task.knex()
-        .select('*')
-        .from('task_labels')
-        .where('taskId', 3)
-        .andWhere('labelId', 2)
-        .first();
-      
-      if (!existingLink2 && tasks.find(t => t.id === 3)) {
-        await Task.knex().insert({
-          taskId: 3,
-          labelId: 2
-        }).into('task_labels');
-        console.log('Added label 2 to task 3');
-      }
-    }
-  } catch (error) {
-    console.error('Error ensuring test labels:', error);
-  }
-};
-
-// Вызываем функцию при создании задачи
-export const createTask = async (request, reply) => {
-  if (!request.user) {
-    reply.flash('error', 'Требуется авторизация');
-    return reply.redirect('/session/new');
-  }
-
-  try {
-    const taskData = request.body.data;
-    taskData.creatorId = request.user.id;
-    
-    taskData.statusId = parseInt(taskData.statusId, 10);
-    if (taskData.executorId) {
-      taskData.executorId = parseInt(taskData.executorId, 10);
-    } else {
-      taskData.executorId = null;
-    }
-    
-    const task = await Task.query().insert(taskData);
-    
-    // Добавляем метки если они есть в данных формы
-    if (taskData.labels && taskData.labels.length > 0) {
-      try {
-        for (const labelId of taskData.labels) {
-          await Task.knex().insert({
-            taskId: task.id,
-            labelId: parseInt(labelId, 10)
-          }).into('task_labels');
-        }
-      } catch (error) {
-        console.error('Error adding labels:', error);
-      }
-    }
-    
-    // Для тестов - добавляем стандартные связи
-    await ensureTestTaskLabels();
-    
-    reply.flash('success', 'Задача успешно создана');
-    return reply.redirect('/tasks');
-  } catch (error) {
-    console.error('Create task error:', error);
-    
-    const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
-    const statuses = await TaskStatus.query().orderBy('id');
-    const labels = await Label.query().orderBy('id');
-    
-    reply.flash('error', 'Ошибка при создании задачи');
-    return reply.view('tasks/new', {
-      task: request.body.data,
-      users,
-      statuses,
-      labels,
-      errors: error.data,
-      title: 'Создание задачи',
-      user: request.user
-    });
-  }
-};
-
-// Также вызываем при загрузке списка задач, чтобы убедиться, что связи есть
-export const listTasksWithFix = async (request, reply) => {
-  await ensureTestTaskLabels();
-  return listTasks(request, reply);
-};
-
-// Остальные функции остаются без изменений
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
@@ -240,6 +130,61 @@ export const newTaskForm = async (request, reply) => {
     title: 'Создание задачи',
     user: request.user
   });
+};
+
+export const createTask = async (request, reply) => {
+  if (!request.user) {
+    reply.flash('error', 'Требуется авторизация');
+    return reply.redirect('/session/new');
+  }
+
+  try {
+    const taskData = request.body.data;
+    taskData.creatorId = request.user.id;
+    
+    taskData.statusId = parseInt(taskData.statusId, 10);
+    if (taskData.executorId) {
+      taskData.executorId = parseInt(taskData.executorId, 10);
+    } else {
+      taskData.executorId = null;
+    }
+    
+    const task = await Task.query().insert(taskData);
+    
+    // Добавляем метки если они есть в данных формы
+    if (taskData.labels && taskData.labels.length > 0) {
+      try {
+        for (const labelId of taskData.labels) {
+          await Task.knex().insert({
+            taskId: task.id,
+            labelId: parseInt(labelId, 10)
+          }).into('task_labels');
+        }
+      } catch (error) {
+        console.error('Error adding labels:', error);
+      }
+    }
+    
+    reply.flash('success', 'Задача успешно создана');
+    return reply.redirect('/tasks');
+  } catch (error) {
+    console.error('Create task error:', error);
+    
+    const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
+    const statuses = await TaskStatus.query().orderBy('id');
+    const labels = await Label.query().orderBy('id');
+    
+    reply.flash('error', 'Ошибка при создании задачи');
+    return reply.view('tasks/new', {
+      task: request.body.data,
+      users,
+      statuses,
+      labels,
+      errors: error.data,
+      title: 'Создание задачи',
+      user: request.user
+    });
+  }
 };
 
 export const editTaskForm = async (request, reply) => {
