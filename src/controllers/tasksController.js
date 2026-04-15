@@ -3,68 +3,8 @@ import User from '../models/User.js';
 import TaskStatus from '../models/TaskStatus.js';
 import Label from '../models/Label.js';
 
-// Флаг для отслеживания инициализации
-let taskLabelsInitialized = false;
-
-// Функция для инициализации связей задач с метками
-async function ensureTaskLabelsInitialized() {
-  if (taskLabelsInitialized) return;
-  
-  try {
-    console.log('Checking task-label initialization...');
-    
-    // Проверяем существование таблицы task_labels
-    const hasTable = await Task.knex().schema.hasTable('task_labels');
-    if (!hasTable) {
-      console.log('Table task_labels does not exist yet');
-      return;
-    }
-    
-    // Получаем все задачи и метки
-    const tasks = await Task.query();
-    const labels = await Label.query();
-    
-    console.log(`Found ${tasks.length} tasks and ${labels.length} labels`);
-    
-    if (tasks.length >= 2 && labels.length >= 1) {
-      // Для задачи с ID 2 добавляем метку с ID 1
-      const link1 = await Task.knex('task_labels')
-        .where('taskId', 2)
-        .where('labelId', 1)
-        .first();
-      
-      if (!link1) {
-        await Task.knex('task_labels').insert({ taskId: 2, labelId: 1 });
-        console.log('✅ Added label 1 to task 2');
-      } else {
-        console.log('Label 1 already linked to task 2');
-      }
-      
-      // Для задачи с ID 3 добавляем метку с ID 2
-      const link2 = await Task.knex('task_labels')
-        .where('taskId', 3)
-        .where('labelId', 2)
-        .first();
-      
-      if (!link2) {
-        await Task.knex('task_labels').insert({ taskId: 3, labelId: 2 });
-        console.log('✅ Added label 2 to task 3');
-      } else {
-        console.log('Label 2 already linked to task 3');
-      }
-    }
-    
-    taskLabelsInitialized = true;
-  } catch (error) {
-    console.error('Error ensuring task labels:', error.message);
-  }
-}
-
 // Список всех задач
 export const listTasks = async (request, reply) => {
-  // Инициализируем связи для тестов
-  await ensureTaskLabelsInitialized();
-  
   try {
     const { status, assigned_to_id, label, isCreatorUser } = request.query;
     const userId = request.user?.id;
@@ -91,32 +31,29 @@ export const listTasks = async (request, reply) => {
     
     let tasks;
     
-    // Фильтр по метке
+    // Фильтр по метке - упрощенная версия
     if (label && label !== '') {
       try {
-        // Получаем ID задач, у которых есть указанная метка
-        const tasksWithLabel = await Task.knex('task_labels')
-          .select('taskId')
-          .where('labelId', parseInt(label, 10));
+        // Прямой SQL запрос для получения задач с меткой
+        const { rows } = await Task.knex().raw(`
+          SELECT DISTINCT t.* 
+          FROM tasks t
+          INNER JOIN task_labels tl ON t.id = tl.taskId
+          WHERE tl.labelId = ?
+        `, [parseInt(label, 10)]);
         
-        const taskIds = tasksWithLabel.map(t => t.taskId);
-        
-        console.log(`Tasks with label ${label}:`, taskIds);
+        const taskIds = rows.map(t => t.id);
         
         if (taskIds.length === 0) {
           tasks = [];
         } else {
-          // Применяем остальные фильтры и фильтр по меткам
           tasks = await query.whereIn('id', taskIds);
         }
-        
-        console.log(`Found ${tasks.length} tasks with label ${label}`);
       } catch (error) {
-        console.error('Error filtering by label:', error);
+        console.error('Error filtering by label:', error.message);
         tasks = await query;
       }
     } else {
-      // Без фильтра по метке - показываем все задачи
       tasks = await query;
     }
     
@@ -126,7 +63,6 @@ export const listTasks = async (request, reply) => {
     const labels = await Label.query().orderBy('id');
     
     console.log(`Total tasks found: ${tasks.length}`);
-    console.log('Tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
     
     return reply.view('tasks/index', {
       tasks,
@@ -144,12 +80,12 @@ export const listTasks = async (request, reply) => {
     });
   } catch (error) {
     console.error('List tasks error:', error);
+    console.error('Error stack:', error.stack);
     reply.flash('error', 'Ошибка при загрузке задач');
     return reply.redirect('/');
   }
 };
 
-// Остальные функции (showTask, newTaskForm, createTask, editTaskForm, updateTask, deleteTask)
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
@@ -213,20 +149,6 @@ export const createTask = async (request, reply) => {
     
     const task = await Task.query().insert(taskData);
     
-    // Добавляем метки если они есть в данных формы
-    if (taskData.labels && taskData.labels.length > 0) {
-      try {
-        for (const labelId of taskData.labels) {
-          await Task.knex('task_labels').insert({
-            taskId: task.id,
-            labelId: parseInt(labelId, 10)
-          });
-        }
-      } catch (error) {
-        console.error('Error adding labels:', error);
-      }
-    }
-    
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
   } catch (error) {
@@ -272,15 +194,8 @@ export const editTaskForm = async (request, reply) => {
   const statuses = await TaskStatus.query().orderBy('id');
   const labels = await Label.query().orderBy('id');
   
-  // Получаем метки задачи
-  const taskLabels = await Task.knex('task_labels')
-    .select('labelId')
-    .where('taskId', parseInt(id, 10));
-  
-  const taskLabelIds = taskLabels.map(l => l.labelId);
-  
   return reply.view('tasks/edit', {
-    task: { ...task, labels: taskLabelIds },
+    task,
     users,
     statuses,
     labels,
@@ -321,24 +236,6 @@ export const updateTask = async (request, reply) => {
     }
     
     await Task.query().patchAndFetchById(id, taskData);
-    
-    // Обновляем метки
-    if (taskData.labels) {
-      try {
-        // Удаляем старые связи
-        await Task.knex('task_labels').where('taskId', parseInt(id, 10)).delete();
-        
-        // Добавляем новые
-        for (const labelId of taskData.labels) {
-          await Task.knex('task_labels').insert({
-            taskId: parseInt(id, 10),
-            labelId: parseInt(labelId, 10)
-          });
-        }
-      } catch (error) {
-        console.error('Error updating labels:', error);
-      }
-    }
     
     reply.flash('success', 'Задача успешно обновлена');
     return reply.redirect('/tasks');
@@ -383,8 +280,6 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
-    // Удаляем связи с метками
-    await Task.knex('task_labels').where('taskId', parseInt(id, 10)).delete();
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
   } catch (error) {
