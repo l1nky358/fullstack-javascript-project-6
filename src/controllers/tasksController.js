@@ -11,9 +11,9 @@ export const listTasks = async (request, reply) => {
     
     console.log('Query params:', { status, assigned_to_id, label, isCreatorUser });
     
-    // Базовый запрос
+    // Базовый запрос с eager loading для связанных данных
     let query = Task.query()
-      .withGraphFetched('[creator, executor, status]')
+      .withGraphFetched('[creator, executor, status, labels]') // Добавили labels
       .orderBy('id');
     
     // Применяем фильтры
@@ -31,36 +31,19 @@ export const listTasks = async (request, reply) => {
     
     let tasks;
     
-    // Фильтр по метке
+    // Фильтр по метке - ИСПРАВЛЕНАЯ ВЕРСИЯ
     if (label && label !== '') {
       try {
-        // Получаем ID задач с указанной меткой через прямой SQL запрос
-        const result = await Task.knex().raw(`
-          SELECT taskId 
-          FROM task_labels 
-          WHERE labelId = ?
-        `, [parseInt(label, 10)]);
+        // Используем JOIN для фильтрации по меткам
+        tasks = await query
+          .join('task_labels', 'tasks.id', 'task_labels.taskId')
+          .where('task_labels.labelId', parseInt(label, 10))
+          .select('tasks.*');
         
-        // В зависимости от драйвера БД результат может быть в разных местах
-        let taskIds = [];
-        if (result && result.rows) {
-          taskIds = result.rows.map(r => r.taskId);
-        } else if (result && Array.isArray(result)) {
-          taskIds = result.map(r => r.taskId);
-        } else if (result && result[0] && Array.isArray(result[0])) {
-          taskIds = result[0].map(r => r.taskId);
-        }
-        
-        console.log(`Task IDs with label ${label}:`, taskIds);
-        
-        if (taskIds.length === 0) {
-          tasks = [];
-        } else {
-          tasks = await query.whereIn('id', taskIds);
-        }
+        console.log(`Найдено задач с меткой ${label}:`, tasks.length);
       } catch (error) {
-        console.error('Error filtering by label:', error.message);
-        // Если ошибка, показываем все задачи без фильтра по метке
+        console.error('Ошибка фильтрации по метке:', error.message);
+        // В случае ошибки показываем все задачи без фильтра по метке
         tasks = await query;
       }
     } else {
@@ -72,8 +55,8 @@ export const listTasks = async (request, reply) => {
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const labels = await Label.query().orderBy('id');
     
-    console.log(`Total tasks found: ${tasks.length}`);
-    console.log('Tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
+    console.log(`Всего найдено задач: ${tasks.length}`);
+    console.log('Задачи:', tasks.map(t => ({ id: t.id, name: t.name })));
     
     return reply.view('tasks/index', {
       tasks,
@@ -90,8 +73,8 @@ export const listTasks = async (request, reply) => {
       user: request.user
     });
   } catch (error) {
-    console.error('List tasks error:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Ошибка при загрузке задач:', error);
+    console.error('Стек ошибки:', error.stack);
     reply.flash('error', 'Ошибка при загрузке задач');
     return reply.redirect('/');
   }
@@ -101,7 +84,7 @@ export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
     const task = await Task.query()
-      .withGraphFetched('[creator, executor, status]')
+      .withGraphFetched('[creator, executor, status, labels]')
       .findById(id);
     
     if (!task) {
@@ -115,7 +98,7 @@ export const showTask = async (request, reply) => {
       user: request.user
     });
   } catch (error) {
-    console.error('Show task error:', error);
+    console.error('Ошибка при загрузке задачи:', error);
     reply.flash('error', 'Ошибка при загрузке задачи');
     return reply.redirect('/tasks');
   }
@@ -163,7 +146,7 @@ export const createTask = async (request, reply) => {
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
   } catch (error) {
-    console.error('Create task error:', error);
+    console.error('Ошибка при создании задачи:', error);
     
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const statuses = await TaskStatus.query().orderBy('id');
@@ -189,7 +172,9 @@ export const editTaskForm = async (request, reply) => {
   }
   
   const { id } = request.params;
-  const task = await Task.query().findById(id);
+  const task = await Task.query()
+    .withGraphFetched('labels')
+    .findById(id);
   
   if (!task) {
     reply.flash('error', 'Задача не найдена');
@@ -251,7 +236,7 @@ export const updateTask = async (request, reply) => {
     reply.flash('success', 'Задача успешно обновлена');
     return reply.redirect('/tasks');
   } catch (error) {
-    console.error('Update task error:', error);
+    console.error('Ошибка при обновлении задачи:', error);
     
     const task = await Task.query().findById(id);
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
@@ -294,7 +279,7 @@ export const deleteTask = async (request, reply) => {
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
   } catch (error) {
-    console.error('Delete task error:', error);
+    console.error('Ошибка при удалении задачи:', error);
     reply.flash('error', 'Ошибка при удалении задачи');
   }
   
