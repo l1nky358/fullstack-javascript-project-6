@@ -6,10 +6,10 @@ import Label from '../models/Label.js';
 // Список всех задач
 export const listTasks = async (request, reply) => {
   try {
-    const { status, executor, label_id, isCreatorUser } = request.query;
+    const { status, assigned_to_id, label, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
-    console.log('Query params:', { status, executor, label_id, isCreatorUser });
+    console.log('Query params:', { status, assigned_to_id, label, isCreatorUser });
     
     // Базовый запрос
     let query = Task.query()
@@ -21,8 +21,8 @@ export const listTasks = async (request, reply) => {
       query = query.where('statusId', parseInt(status, 10));
     }
     
-    if (executor && executor !== '') {
-      query = query.where('executorId', parseInt(executor, 10));
+    if (assigned_to_id && assigned_to_id !== '') {
+      query = query.where('executorId', parseInt(assigned_to_id, 10));
     }
     
     if (isCreatorUser === 'on' && userId) {
@@ -32,30 +32,24 @@ export const listTasks = async (request, reply) => {
     let tasks;
     
     // Фильтр по метке
-    if (label_id && label_id !== '') {
+    if (label && label !== '') {
       try {
-        // Получаем все задачи с их метками через прямой SQL запрос
-        const allTasks = await query;
+        // Получаем ID задач, у которых есть указанная метка
+        const tasksWithLabel = await Task.knex()
+          .select('taskId')
+          .from('task_labels')
+          .where('labelId', parseInt(label, 10));
         
-        // Для каждой задачи получаем ее метки
-        const tasksWithLabels = await Promise.all(allTasks.map(async (task) => {
-          const labels = await Task.knex()
-            .select('labelId')
-            .from('task_labels')
-            .where('taskId', task.id);
-          
-          return {
-            task,
-            labelIds: labels.map(l => l.labelId)
-          };
-        }));
+        const taskIds = tasksWithLabel.map(t => t.taskId);
         
-        // Фильтруем задачи по метке
-        tasks = tasksWithLabels
-          .filter(item => item.labelIds.includes(parseInt(label_id, 10)))
-          .map(item => item.task);
+        if (taskIds.length === 0) {
+          tasks = [];
+        } else {
+          // Применяем остальные фильтры и фильтр по меткам
+          tasks = await query.whereIn('id', taskIds);
+        }
         
-        console.log(`Found ${tasks.length} tasks with label ${label_id}`);
+        console.log(`Found ${tasks.length} tasks with label ${label}`);
       } catch (error) {
         console.error('Error filtering by label:', error);
         tasks = await query;
@@ -79,8 +73,8 @@ export const listTasks = async (request, reply) => {
       labels,
       filters: {
         status: status || '',
-        executor: executor || '',
-        label_id: label_id || '',
+        assigned_to_id: assigned_to_id || '',
+        label: label || '',
         isCreatorUser: isCreatorUser || ''
       },
       title: 'Задачи',
@@ -93,7 +87,7 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Остальные функции остаются без изменений
+// Остальные функции (showTask, newTaskForm, createTask, editTaskForm, updateTask, deleteTask)
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
