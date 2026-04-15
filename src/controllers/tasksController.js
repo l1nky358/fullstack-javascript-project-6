@@ -9,6 +9,8 @@ export const listTasks = async (request, reply) => {
     const { status, executor, label_id, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
+    console.log('Query params:', { status, executor, label_id, isCreatorUser });
+    
     // Базовый запрос
     let query = Task.query()
       .withGraphFetched('[creator, executor, status]')
@@ -32,29 +34,28 @@ export const listTasks = async (request, reply) => {
     // Фильтр по метке
     if (label_id && label_id !== '') {
       try {
-        // Проверяем существование таблицы task_labels
-        const hasTable = await Task.knex().schema.hasTable('task_labels');
+        // Получаем все задачи с их метками через прямой SQL запрос
+        const allTasks = await query;
         
-        if (hasTable) {
-          // Получаем ID задач с указанной меткой
-          const tasksWithLabel = await Task.knex()
-            .select('taskId')
+        // Для каждой задачи получаем ее метки
+        const tasksWithLabels = await Promise.all(allTasks.map(async (task) => {
+          const labels = await Task.knex()
+            .select('labelId')
             .from('task_labels')
-            .where('labelId', parseInt(label_id, 10));
+            .where('taskId', task.id);
           
-          const taskIds = tasksWithLabel.map(t => t.taskId);
-          
-          if (taskIds.length === 0) {
-            tasks = [];
-          } else {
-            // Применяем остальные фильтры
-            query = query.whereIn('id', taskIds);
-            tasks = await query;
-          }
-        } else {
-          // Если таблицы нет, игнорируем фильтр по метке
-          tasks = await query;
-        }
+          return {
+            task,
+            labelIds: labels.map(l => l.labelId)
+          };
+        }));
+        
+        // Фильтруем задачи по метке
+        tasks = tasksWithLabels
+          .filter(item => item.labelIds.includes(parseInt(label_id, 10)))
+          .map(item => item.task);
+        
+        console.log(`Found ${tasks.length} tasks with label ${label_id}`);
       } catch (error) {
         console.error('Error filtering by label:', error);
         tasks = await query;
@@ -69,8 +70,7 @@ export const listTasks = async (request, reply) => {
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const labels = await Label.query().orderBy('id');
     
-    // Для отладки - выводим в консоль количество задач
-    console.log(`Found ${tasks.length} tasks with filters:`, { status, executor, label_id, isCreatorUser });
+    console.log(`Total tasks found: ${tasks.length}`);
     
     return reply.view('tasks/index', {
       tasks,
@@ -93,8 +93,7 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Остальные функции (showTask, newTaskForm, createTask, editTaskForm, updateTask, deleteTask)
-// остаются без изменений как в предыдущей версии
+// Остальные функции остаются без изменений
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
@@ -160,7 +159,12 @@ export const createTask = async (request, reply) => {
     
     if (taskData.labels && taskData.labels.length > 0) {
       try {
-        await task.$relatedQuery('labels').relate(taskData.labels);
+        for (const labelId of taskData.labels) {
+          await Task.knex().insert({
+            taskId: task.id,
+            labelId: parseInt(labelId, 10)
+          }).into('task_labels');
+        }
       } catch (error) {
         console.error('Error adding labels:', error);
       }
@@ -211,8 +215,16 @@ export const editTaskForm = async (request, reply) => {
   const statuses = await TaskStatus.query().orderBy('id');
   const labels = await Label.query().orderBy('id');
   
+  // Получаем метки задачи
+  const taskLabels = await Task.knex()
+    .select('labelId')
+    .from('task_labels')
+    .where('taskId', parseInt(id, 10));
+  
+  const taskLabelIds = taskLabels.map(l => l.labelId);
+  
   return reply.view('tasks/edit', {
-    task,
+    task: { ...task, labels: taskLabelIds },
     users,
     statuses,
     labels,
@@ -254,11 +266,18 @@ export const updateTask = async (request, reply) => {
     
     await Task.query().patchAndFetchById(id, taskData);
     
+    // Обновляем метки
     if (taskData.labels) {
       try {
-        await existingTask.$relatedQuery('labels').unrelate();
-        if (taskData.labels.length > 0) {
-          await existingTask.$relatedQuery('labels').relate(taskData.labels);
+        // Удаляем старые связи
+        await Task.knex().delete().from('task_labels').where('taskId', parseInt(id, 10));
+        
+        // Добавляем новые
+        for (const labelId of taskData.labels) {
+          await Task.knex().insert({
+            taskId: parseInt(id, 10),
+            labelId: parseInt(labelId, 10)
+          }).into('task_labels');
         }
       } catch (error) {
         console.error('Error updating labels:', error);
@@ -308,11 +327,8 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
-    try {
-      await task.$relatedQuery('labels').unrelate();
-    } catch (error) {
-      // Игнорируем ошибку
-    }
+    // Удаляем связи с метками
+    await Task.knex().delete().from('task_labels').where('taskId', parseInt(id, 10));
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
   } catch (error) {
