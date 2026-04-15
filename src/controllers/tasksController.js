@@ -13,7 +13,7 @@ export const listTasks = async (request, reply) => {
     
     // Базовый запрос
     let query = Task.query()
-      .withGraphFetched('[creator, executor, status]')
+      .withGraphFetched('[creator, executor, status, labels]')
       .orderBy('id');
     
     // Применяем фильтры
@@ -25,19 +25,18 @@ export const listTasks = async (request, reply) => {
       query = query.where('executorId', parseInt(assigned_to_id, 10));
     }
     
-    // ФИЛЬТР "ТОЛЬКО МОИ ЗАДАЧИ" - ИСПРАВЛЕН
-    // Проверяем, что isCreatorUser === 'on' И userId существует
     if (isCreatorUser === 'on' && userId) {
-      console.log('Применяем фильтр только мои задачи, userId:', userId);
       query = query.where('creatorId', userId);
     }
     
     let tasks;
     
-    // Фильтр по метке (пока закомментирован)
+    // Фильтр по метке
     if (label && label !== '') {
       try {
         const labelId = parseInt(label, 10);
+        
+        // Получаем ID задач с нужной меткой через join
         const taskIdsResult = await Task.knex()
           .select('taskId')
           .from('task_labels')
@@ -88,12 +87,11 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Остальные функции остаются без изменений
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
     const task = await Task.query()
-      .withGraphFetched('[creator, executor, status]')
+      .withGraphFetched('[creator, executor, status, labels]')
       .findById(id);
     
     if (!task) {
@@ -154,10 +152,29 @@ export const createTask = async (request, reply) => {
       taskData.description = '';
     }
     
-    console.log('Создаём задачу с данными:', taskData);
+    // Сохраняем метки отдельно
+    const labelsData = taskData.labels;
+    delete taskData.labels;
     
+    console.log('Создаём задачу с данными:', taskData);
+    console.log('Метки для задачи:', labelsData);
+    
+    // Создаём задачу
     const task = await Task.query().insert(taskData);
-    console.log('Создана задача:', task.id, task.name);
+    console.log('Создана задача ID:', task.id);
+    
+    // Добавляем метки, если они есть
+    if (labelsData && Array.isArray(labelsData) && labelsData.length > 0) {
+      // Преобразуем строки в числа, если нужно
+      const labelIds = labelsData.map(id => parseInt(id, 10));
+      console.log('Добавляем метки с ID:', labelIds);
+      
+      await task.$relatedQuery('labels').relate(labelIds);
+      
+      // Проверяем, добавились ли метки
+      const taskLabels = await task.$relatedQuery('labels');
+      console.log('Метки после добавления:', taskLabels.map(l => ({ id: l.id, name: l.name })));
+    }
     
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
@@ -188,7 +205,9 @@ export const editTaskForm = async (request, reply) => {
   }
   
   const { id } = request.params;
-  const task = await Task.query().findById(id);
+  const task = await Task.query()
+    .withGraphFetched('labels')
+    .findById(id);
   
   if (!task) {
     reply.flash('error', 'Задача не найдена');
@@ -245,7 +264,20 @@ export const updateTask = async (request, reply) => {
       taskData.executorId = null;
     }
     
+    // Сохраняем метки отдельно
+    const labelsData = taskData.labels;
+    delete taskData.labels;
+    
     await Task.query().patchAndFetchById(id, taskData);
+    
+    // Обновляем метки
+    if (labelsData && Array.isArray(labelsData)) {
+      const labelIds = labelsData.map(l => parseInt(l, 10));
+      await existingTask.$relatedQuery('labels').unrelate();
+      if (labelIds.length > 0) {
+        await existingTask.$relatedQuery('labels').relate(labelIds);
+      }
+    }
     
     reply.flash('success', 'Задача успешно обновлена');
     return reply.redirect('/tasks');
@@ -290,6 +322,7 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
+    // Удаляем связи с метками
     await Task.knex().from('task_labels').where('taskId', id).del();
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
