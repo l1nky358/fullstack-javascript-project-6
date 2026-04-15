@@ -11,9 +11,9 @@ export const listTasks = async (request, reply) => {
     
     console.log('Query params:', { status, assigned_to_id, label, isCreatorUser, userId });
     
-    // ВРЕМЕННО убираем labels из withGraphFetched
+    // Базовый запрос
     let query = Task.query()
-      .withGraphFetched('[creator, executor, status]') // Убрал labels
+      .withGraphFetched('[creator, executor, status]')
       .orderBy('id');
     
     // Применяем фильтры
@@ -57,6 +57,7 @@ export const listTasks = async (request, reply) => {
       tasks = await query;
     }
     
+    // Получаем данные для фильтров
     const statuses = await TaskStatus.query().orderBy('id');
     const users = await User.query().select('id', 'firstName', 'lastName').orderBy('id');
     const labels = await Label.query().orderBy('id');
@@ -88,9 +89,8 @@ export const listTasks = async (request, reply) => {
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
-    // ВРЕМЕННО убираем labels
     const task = await Task.query()
-      .withGraphFetched('[creator, executor, status]') // Убрал labels
+      .withGraphFetched('[creator, executor, status]')
       .findById(id);
     
     if (!task) {
@@ -139,7 +139,7 @@ export const createTask = async (request, reply) => {
   }
 
   try {
-    const taskData = request.body.data;
+    const taskData = request.body.data || request.body;
     taskData.creatorId = request.user.id;
     
     taskData.statusId = parseInt(taskData.statusId, 10);
@@ -153,27 +153,39 @@ export const createTask = async (request, reply) => {
       taskData.description = '';
     }
     
-    const labelsData = taskData.labels;
+    // Получаем метки из разных возможных мест
+    let labelsData = taskData.labels;
+    
+    // Если метки не найдены, пробуем другие варианты
+    if (!labelsData || labelsData.length === 0) {
+      if (request.body.labels) {
+        labelsData = request.body.labels;
+      } else if (request.body.data && request.body.data.labels) {
+        labelsData = request.body.data.labels;
+      }
+    }
+    
+    // Удаляем labels из taskData
     delete taskData.labels;
     
     console.log('Создаём задачу:', taskData);
-    console.log('Метки:', labelsData);
+    console.log('Метки для добавления:', labelsData);
     
     const task = await Task.query().insert(taskData);
     console.log('Задача создана с ID:', task.id);
     
+    // Добавляем метки, если они есть
     if (labelsData && Array.isArray(labelsData) && labelsData.length > 0) {
       const labelIds = labelsData.map(id => parseInt(id, 10));
-      console.log('Добавляем метки:', labelIds);
+      console.log('Добавляем метки с ID:', labelIds);
       
-      // Используем прямой SQL запрос, так как связи в модели ещё нет
       for (const labelId of labelIds) {
         await Task.knex().insert({
           taskId: task.id,
           labelId: labelId
         }).into('task_labels');
       }
-      console.log('Метки добавлены');
+      console.log('Метки успешно добавлены');
     }
     
     reply.flash('success', 'Задача успешно создана');
@@ -187,7 +199,7 @@ export const createTask = async (request, reply) => {
     
     reply.flash('error', 'Ошибка при создании задачи');
     return reply.view('tasks/new', {
-      task: request.body.data,
+      task: request.body.data || request.body,
       users,
       statuses,
       labels,
@@ -198,7 +210,7 @@ export const createTask = async (request, reply) => {
   }
 };
 
-// Редактирование задачи
+// Форма редактирования задачи
 export const editTaskForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -253,7 +265,7 @@ export const updateTask = async (request, reply) => {
   }
   
   try {
-    const taskData = request.body.data;
+    const taskData = request.body.data || request.body;
     
     if (taskData.statusId) {
       taskData.statusId = parseInt(taskData.statusId, 10);
@@ -264,11 +276,21 @@ export const updateTask = async (request, reply) => {
       taskData.executorId = null;
     }
     
-    const labelsData = taskData.labels;
+    // Получаем метки
+    let labelsData = taskData.labels;
+    if (!labelsData || labelsData.length === 0) {
+      if (request.body.labels) {
+        labelsData = request.body.labels;
+      } else if (request.body.data && request.body.data.labels) {
+        labelsData = request.body.data.labels;
+      }
+    }
+    
     delete taskData.labels;
     
     await Task.query().patchAndFetchById(id, taskData);
     
+    // Обновляем метки
     if (labelsData && Array.isArray(labelsData)) {
       // Удаляем старые связи
       await Task.knex().from('task_labels').where('taskId', id).del();
@@ -295,7 +317,7 @@ export const updateTask = async (request, reply) => {
     
     reply.flash('error', 'Ошибка при обновлении задачи');
     return reply.view('tasks/edit', {
-      task: { ...task, ...request.body.data },
+      task: { ...task, ...(request.body.data || request.body) },
       users,
       statuses,
       labels,
@@ -327,6 +349,7 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
+    // Удаляем связи с метками
     await Task.knex().from('task_labels').where('taskId', id).del();
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
