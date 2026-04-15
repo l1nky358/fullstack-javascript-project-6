@@ -29,19 +29,19 @@ block content
                 each userItem in users
                   option(value=userItem.id selected=(filters && Number(filters.assigned_to_id) === userItem.id))= `${userItem.firstName} ${userItem.lastName}`
           
-          // Фильтр по метке - ВАЖНО: id должен быть 'data_label' (без _id)
+          // Фильтр по метке - ВАЖНО: id='data_label', name='label'
           .col-md-2.mb-3
             label.form-label(for='data_label') Метка
-            select.form-select(id='data_label' name='label_id')
+            select.form-select(id='data_label' name='label')
               option(value='') Все метки
               if labels && labels.length > 0
                 each label in labels
-                  option(value=label.id selected=(filters && Number(filters.label_id) === label.id))= label.name
+                  option(value=label.id selected=(filters && Number(filters.label) === label.id))= label.name
           
           // Чекбокс "Только мои задачи"
           .col-md-2.mb-3
             .form-check.mt-4
-              input.form-check-input(type='checkbox' id='data_my_tasks' name='my_tasks' checked=(filters && filters.my_tasks === 'on'))
+              input.form-check-input(type='checkbox' id='data_my_tasks' name='isCreatorUser' checked=(filters && filters.isCreatorUser === 'on'))
               label.form-check-label(for='data_my_tasks') Только мои задачи
           
           .col-md-2.mb-3
