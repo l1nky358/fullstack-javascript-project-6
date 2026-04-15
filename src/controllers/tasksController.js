@@ -6,7 +6,7 @@ import Label from '../models/Label.js';
 // Список всех задач
 export const listTasks = async (request, reply) => {
   try {
-    const { status, executor, isCreatorUser } = request.query;
+    const { status, executor, label_id, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
     // Базовый запрос - БЕЗ labels (если связи нет)
@@ -27,7 +27,34 @@ export const listTasks = async (request, reply) => {
       query = query.where('creatorId', userId);
     }
     
-    const tasks = await query;
+    let tasks;
+    
+    // Фильтр по метке (используем прямой запрос к БД)
+    if (label_id && label_id !== '') {
+      // Проверяем существование таблицы task_labels
+      try {
+        // Получаем ID задач, у которых есть указанная метка
+        const tasksWithLabel = await Task.knex()
+          .select('taskId')
+          .from('task_labels')
+          .where('labelId', parseInt(label_id, 10));
+        
+        const taskIds = tasksWithLabel.map(t => t.taskId);
+        
+        if (taskIds.length === 0) {
+          tasks = [];
+        } else {
+          query = query.whereIn('id', taskIds);
+          tasks = await query;
+        }
+      } catch (error) {
+        // Если таблицы task_labels нет, просто игнорируем фильтр по метке
+        console.error('Error filtering by label:', error);
+        tasks = await query;
+      }
+    } else {
+      tasks = await query;
+    }
     
     // Получаем данные для фильтров
     const statuses = await TaskStatus.query().orderBy('id');
@@ -39,7 +66,12 @@ export const listTasks = async (request, reply) => {
       statuses,
       users,
       labels,
-      filters: request.query,
+      filters: {
+        status: status || '',
+        executor: executor || '',
+        label_id: label_id || '',
+        isCreatorUser: isCreatorUser || ''
+      },
       title: 'Задачи',
       user: request.user
     });
@@ -116,6 +148,15 @@ export const createTask = async (request, reply) => {
     }
     
     const task = await Task.query().insert(taskData);
+    
+    // Добавляем метки, если они есть
+    if (taskData.labels && taskData.labels.length > 0) {
+      try {
+        await task.$relatedQuery('labels').relate(taskData.labels);
+      } catch (error) {
+        console.error('Error adding labels:', error);
+      }
+    }
     
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
@@ -208,6 +249,18 @@ export const updateTask = async (request, reply) => {
     
     await Task.query().patchAndFetchById(id, taskData);
     
+    // Обновляем метки
+    if (taskData.labels) {
+      try {
+        await existingTask.$relatedQuery('labels').unrelate();
+        if (taskData.labels.length > 0) {
+          await existingTask.$relatedQuery('labels').relate(taskData.labels);
+        }
+      } catch (error) {
+        console.error('Error updating labels:', error);
+      }
+    }
+    
     reply.flash('success', 'Задача успешно обновлена');
     return reply.redirect('/tasks');
   } catch (error) {
@@ -252,6 +305,12 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
+    // Удаляем связи с метками
+    try {
+      await task.$relatedQuery('labels').unrelate();
+    } catch (error) {
+      // Игнорируем ошибку, если связи нет
+    }
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
   } catch (error) {
