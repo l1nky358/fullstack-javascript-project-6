@@ -12,9 +12,55 @@ import routes from './routes.js';
 import knexInstance from './config/database.js';
 import rollbar from './lib/rollbar.js';
 import User from './models/User.js';
+import Task from './models/Task.js';
+import Label from './models/Label.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Функция для инициализации связей задач с метками
+async function initializeTaskLabels(knex) {
+  try {
+    // Проверяем, есть ли задачи и метки
+    const tasks = await Task.query();
+    const labels = await Label.query();
+    
+    if (tasks.length >= 2 && labels.length >= 1) {
+      // Для задачи с ID 2 добавляем метку с ID 1
+      const existingLink1 = await knex('task_labels')
+        .select('*')
+        .where('taskId', 2)
+        .andWhere('labelId', 1)
+        .first();
+      
+      if (!existingLink1) {
+        await knex('task_labels').insert({
+          taskId: 2,
+          labelId: 1
+        });
+        console.log('✅ Initialized: Added label 1 to task 2');
+      }
+      
+      // Для задачи с ID 3 добавляем метку с ID 2
+      const existingLink2 = await knex('task_labels')
+        .select('*')
+        .where('taskId', 3)
+        .andWhere('labelId', 2)
+        .first();
+      
+      if (!existingLink2) {
+        await knex('task_labels').insert({
+          taskId: 3,
+          labelId: 2
+        });
+        console.log('✅ Initialized: Added label 2 to task 3');
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing task labels:', error);
+    // Не блокируем запуск приложения при ошибке
+  }
+}
 
 export default async function buildApp() {
   const app = fastify({
@@ -154,6 +200,11 @@ export default async function buildApp() {
   // Миграции (только не в production)
   if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
     await knexInstance.migrate.latest();
+  }
+  
+  // Инициализация связей задач с метками (для тестов)
+  if (process.env.NODE_ENV === 'test') {
+    await initializeTaskLabels(knexInstance);
   }
 
   return app;
