@@ -31,18 +31,27 @@ export const listTasks = async (request, reply) => {
     
     let tasks;
     
-    // Фильтр по метке - упрощенная версия
+    // Фильтр по метке
     if (label && label !== '') {
       try {
-        // Прямой SQL запрос для получения задач с меткой
-        const { rows } = await Task.knex().raw(`
-          SELECT DISTINCT t.* 
-          FROM tasks t
-          INNER JOIN task_labels tl ON t.id = tl.taskId
-          WHERE tl.labelId = ?
+        // Получаем ID задач с указанной меткой через прямой SQL запрос
+        const result = await Task.knex().raw(`
+          SELECT taskId 
+          FROM task_labels 
+          WHERE labelId = ?
         `, [parseInt(label, 10)]);
         
-        const taskIds = rows.map(t => t.id);
+        // В зависимости от драйвера БД результат может быть в разных местах
+        let taskIds = [];
+        if (result && result.rows) {
+          taskIds = result.rows.map(r => r.taskId);
+        } else if (result && Array.isArray(result)) {
+          taskIds = result.map(r => r.taskId);
+        } else if (result && result[0] && Array.isArray(result[0])) {
+          taskIds = result[0].map(r => r.taskId);
+        }
+        
+        console.log(`Task IDs with label ${label}:`, taskIds);
         
         if (taskIds.length === 0) {
           tasks = [];
@@ -51,6 +60,7 @@ export const listTasks = async (request, reply) => {
         }
       } catch (error) {
         console.error('Error filtering by label:', error.message);
+        // Если ошибка, показываем все задачи без фильтра по метке
         tasks = await query;
       }
     } else {
@@ -63,6 +73,7 @@ export const listTasks = async (request, reply) => {
     const labels = await Label.query().orderBy('id');
     
     console.log(`Total tasks found: ${tasks.length}`);
+    console.log('Tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
     
     return reply.view('tasks/index', {
       tasks,
