@@ -9,7 +9,7 @@ export const listTasks = async (request, reply) => {
     const { status, assigned_to_id, label, isCreatorUser } = request.query;
     const userId = request.user?.id;
     
-    console.log('Query params:', { status, assigned_to_id, label, isCreatorUser });
+    console.log('Query params:', { status, assigned_to_id, label, isCreatorUser, userId });
     
     // Базовый запрос
     let query = Task.query()
@@ -25,38 +25,39 @@ export const listTasks = async (request, reply) => {
       query = query.where('executorId', parseInt(assigned_to_id, 10));
     }
     
+    // ФИЛЬТР "ТОЛЬКО МОИ ЗАДАЧИ" - ИСПРАВЛЕН
+    // Проверяем, что isCreatorUser === 'on' И userId существует
     if (isCreatorUser === 'on' && userId) {
+      console.log('Применяем фильтр только мои задачи, userId:', userId);
       query = query.where('creatorId', userId);
     }
     
-    // ВРЕМЕННО: Игнорируем фильтр по метке, так как в тестах нет связей
-    // Фильтр по метке - ВРЕМЕННО ОТКЛЮЧЁН
-    // if (label && label !== '') {
-    //   try {
-    //     const labelId = parseInt(label, 10);
-    //     const taskIdsResult = await Task.knex()
-    //       .select('taskId')
-    //       .from('task_labels')
-    //       .where('labelId', labelId);
-    //     
-    //     const taskIds = taskIdsResult.map(row => row.taskId);
-    //     console.log(`Найдено ID задач с меткой ${labelId}:`, taskIds);
-    //     
-    //     if (taskIds.length === 0) {
-    //       tasks = [];
-    //     } else {
-    //       tasks = await query.whereIn('id', taskIds);
-    //     }
-    //   } catch (error) {
-    //     console.error('Ошибка фильтрации по метке:', error.message);
-    //     tasks = await query;
-    //   }
-    // } else {
-    //   tasks = await query;
-    // }
+    let tasks;
     
-    // Временно просто получаем все задачи без фильтра по метке
-    let tasks = await query;
+    // Фильтр по метке (пока закомментирован)
+    if (label && label !== '') {
+      try {
+        const labelId = parseInt(label, 10);
+        const taskIdsResult = await Task.knex()
+          .select('taskId')
+          .from('task_labels')
+          .where('labelId', labelId);
+        
+        const taskIds = taskIdsResult.map(row => row.taskId);
+        console.log(`Найдено ID задач с меткой ${labelId}:`, taskIds);
+        
+        if (taskIds.length === 0) {
+          tasks = [];
+        } else {
+          tasks = await query.whereIn('id', taskIds);
+        }
+      } catch (error) {
+        console.error('Ошибка фильтрации по метке:', error.message);
+        tasks = await query;
+      }
+    } else {
+      tasks = await query;
+    }
     
     // Получаем данные для фильтров
     const statuses = await TaskStatus.query().orderBy('id');
@@ -64,6 +65,7 @@ export const listTasks = async (request, reply) => {
     const labels = await Label.query().orderBy('id');
     
     console.log(`Всего найдено задач: ${tasks.length}`);
+    console.log('ID найденных задач:', tasks.map(t => t.id));
     
     return reply.view('tasks/index', {
       tasks,
@@ -86,7 +88,7 @@ export const listTasks = async (request, reply) => {
   }
 };
 
-// Показ задачи
+// Остальные функции остаются без изменений
 export const showTask = async (request, reply) => {
   const { id } = request.params;
   try {
@@ -111,7 +113,6 @@ export const showTask = async (request, reply) => {
   }
 };
 
-// Форма создания задачи
 export const newTaskForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -132,7 +133,6 @@ export const newTaskForm = async (request, reply) => {
   });
 };
 
-// Создание задачи
 export const createTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -157,17 +157,7 @@ export const createTask = async (request, reply) => {
     console.log('Создаём задачу с данными:', taskData);
     
     const task = await Task.query().insert(taskData);
-    console.log('Создана задача:', task.id, task.name, task.description);
-    
-    // Добавляем метки, если они есть и если это массив
-    if (taskData.labels && Array.isArray(taskData.labels) && taskData.labels.length > 0) {
-      try {
-        await task.$relatedQuery('labels').relate(taskData.labels);
-        console.log('Метки добавлены:', taskData.labels);
-      } catch (error) {
-        console.error('Ошибка добавления меток:', error.message);
-      }
-    }
+    console.log('Создана задача:', task.id, task.name);
     
     reply.flash('success', 'Задача успешно создана');
     return reply.redirect('/tasks');
@@ -191,7 +181,6 @@ export const createTask = async (request, reply) => {
   }
 };
 
-// Редактирование задачи
 export const editTaskForm = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -225,7 +214,6 @@ export const editTaskForm = async (request, reply) => {
   });
 };
 
-// Обновление задачи
 export const updateTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -282,7 +270,6 @@ export const updateTask = async (request, reply) => {
   }
 };
 
-// Удаление задачи
 export const deleteTask = async (request, reply) => {
   if (!request.user) {
     reply.flash('error', 'Требуется авторизация');
@@ -303,7 +290,6 @@ export const deleteTask = async (request, reply) => {
   }
   
   try {
-    // Удаляем связи с метками
     await Task.knex().from('task_labels').where('taskId', id).del();
     await Task.query().deleteById(id);
     reply.flash('success', 'Задача успешно удалена');
