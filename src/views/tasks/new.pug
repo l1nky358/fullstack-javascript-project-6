@@ -7,24 +7,24 @@ block content
     form(action='/tasks' method='POST')
       .mb-3
         label.form-label(for='name') Наименование
-        input.form-control(id='name' name='data[name]' value=task.name required)
+        input.form-control(type='text' id='name' name='data[name]' required)
       
       .mb-3
         label.form-label(for='description') Описание
-        textarea.form-control(id='description' name='data[description]' rows='5')= task.description
+        textarea.form-control(id='description' name='data[description]' rows='5')
       
       .mb-3
         label.form-label(for='data_statusId') Статус
         select.form-control(id='data_statusId' name='data[statusId]' required)
           each status in statuses
-            option(value=status.id selected=(task.statusId == status.id))= status.name
+            option(value=status.id)= status.name
       
       .mb-3
         label.form-label(for='data_executorId') Исполнитель
         select.form-control(id='data_executorId' name='data[executorId]')
           option(value='') Не назначен
           each userItem in users
-            option(value=userItem.id selected=(task.executorId == userItem.id))= `${userItem.firstName} ${userItem.lastName}`
+            option(value=userItem.id)= `${userItem.firstName} ${userItem.lastName}`
       
       .mb-3
         label.form-label(for='data_labels') Метки
