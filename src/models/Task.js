@@ -1,8 +1,9 @@
 import { Model } from 'objection';
 import User from './User.js';
 import TaskStatus from './TaskStatus.js';
+import Label from './Label.js';
 
-export default class Task extends Model {
+class Task extends Model {
   static get tableName() {
     return 'tasks';
   }
@@ -19,8 +20,8 @@ export default class Task extends Model {
         creatorId: { type: 'integer' },
         executorId: { type: ['integer', 'null'] },
         createdAt: { type: 'string' },
-        updatedAt: { type: 'string' },
-      },
+        updatedAt: { type: 'string' }
+      }
     };
   }
 
@@ -31,35 +32,39 @@ export default class Task extends Model {
         modelClass: User,
         join: {
           from: 'tasks.creatorId',
-          to: 'users.id',
-        },
+          to: 'users.id'
+        }
       },
       executor: {
         relation: Model.BelongsToOneRelation,
         modelClass: User,
         join: {
           from: 'tasks.executorId',
-          to: 'users.id',
-        },
+          to: 'users.id'
+        }
       },
       status: {
         relation: Model.BelongsToOneRelation,
         modelClass: TaskStatus,
         join: {
           from: 'tasks.statusId',
-          to: 'task_statuses.id',
-        },
+          to: 'task_statuses.id'
+        }
       },
-      // Убираем связь с labels из-за циклической зависимости
+      labels: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Label,
+        join: {
+          from: 'tasks.id',
+          through: {
+            from: 'task_labels.taskId',
+            to: 'task_labels.labelId'
+          },
+          to: 'labels.id'
+        }
+      }
     };
   }
-
-  $beforeInsert() {
-    this.createdAt = new Date().toISOString();
-    this.updatedAt = new Date().toISOString();
-  }
-
-  $beforeUpdate() {
-    this.updatedAt = new Date().toISOString();
-  }
 }
+
+export default Task;
